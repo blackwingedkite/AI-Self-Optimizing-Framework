@@ -6,7 +6,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from typing import Tuple, List
+from typing import Tuple
 from dotenv import load_dotenv
 import logging
 import datetime
@@ -16,9 +16,7 @@ from dp_for_tsp import DP4TSP
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft JhengHei', 'Arial Unicode MS', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
-# --- 核心 Prompt 設計 (基於使用者提供的檔案) ---
-
-# 這是 STEP 1 的 Prompt，用於問題分類與初步設計
+# 這是 STEP 1 的 Prompt，用於問題分類與初步設計。第一個prompt就是這樣
 STEP_1_PROMPT_TEMPLATE = """
 Task Description: {task_description}
 
@@ -124,14 +122,9 @@ class SelfOptimizingFramework:
     一個框架，讓 LLM 能夠自我優化解決複雜問題，並透過評估機制追蹤其表現。
     """
 
-    def __init__(self, api_key: str):
-        """
-        初始化框架。
-        Args:
-            api_key:  Google Gemini API 金鑰。
-        """
-        if not api_key:
-            raise ValueError("API key cannot be empty.")
+    def __init__(self):
+
+        #gemini的initialization
         self.client = clt()
 
         
@@ -627,16 +620,10 @@ class SelfOptimizingFramework:
 if __name__ == '__main__':
     try:
         # ===== Initialization =====
-        load_dotenv()
-
-        GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "YOUR_GEMINI_API_KEY")
-
-        genai.configure(api_key=GOOGLE_API_KEY)
-        if GOOGLE_API_KEY == "YOUR_GEMINI_API_KEY":
-            print("請設定您的 GOOGLE_API_KEY 環境變數或在程式碼中直接替換 'YOUR_GEMINI_API_KEY'")
-        
-        # 定義 TSP 問題
         task_input = str(input("請輸入你的問題, 如果想看預設問題，請輸入'TSP':"))
+        
+        # 輸入問題:預設是TSP版本的問題，並且配上最優解答來參考其表現，但是也可以輸入各式各樣可以用code優化的問題
+        
         if task_input == "TSP":
             TASK_DESCRIPTION = """
             Solve the Traveling Salesman Problem (TSP) for a given set of 2D points.
@@ -644,13 +631,30 @@ if __name__ == '__main__':
             The distance between points is the Euclidean distance.
             """
             points = np.random.rand(20, 2)
+        # 如果不是預設問題的話，那麼要輸入問題敘述和資料
         else:
             TASK_DESCRIPTION = task_input
-            points = "None"
+            points = str(input("請輸入相關的資料(可略)"))
         print(points)
+
+        # configure
+        load_dotenv()
+        model_name = str(input("請輸入你想使用的model名稱(gemini-2.5-pro, gpt-4o)"))
+        if str.upper(model_name[0:6]) == "GEMINI":
+            GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "YOUR_GEMINI_API_KEY")
+            if GOOGLE_API_KEY == "YOUR_GEMINI_API_KEY":
+                print("請設定您的 GOOGLE_API_KEY 環境變數或在程式碼中直接替換 'YOUR_GEMINI_API_KEY'")
+            genai.configure(api_key=GOOGLE_API_KEY)
+        elif str.upper(model_name[0:3]) == "GPT":
+            OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
+            if OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
+                print("請設定您的 YOUR_OPENAI_API_KEY 環境變數或在程式碼中直接替換 'YOUR_OPENAI_API_KEY'")
+            genai.configure(api_key=OPENAI_API_KEY)
+        else:
+            print("請輸入正確的模型名稱。")
         print("============================")
         # 創建並運行框架
-        framework = SelfOptimizingFramework(api_key=GOOGLE_API_KEY)
+        framework = SelfOptimizingFramework()
         framework.run(
             model_name="gemini-2.5-flash",
             task_description=TASK_DESCRIPTION,
