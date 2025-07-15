@@ -27,7 +27,7 @@ Task Description: {task_description}
 Analyze the computational complexity of the described task. Based on your analysis, classify the problem into one of two categories:
 1.  **Definite Algorithm Feasible (DP-like)**: A category for problems where an exact, optimal solution can be found in a reasonable, predictable amount of time (e.g., polynomial time).
 2.  **Indefinite Algorithm Required (Heuristic/NP-Hard)**: A category for problems where finding a guaranteed optimal solution is computationally infeasible, thus requiring heuristic or approximation strategies.
-
+Keep your output quite brief, concise and insightful.
 Start your response with the classification in the format: "Classification: [Your Classification]".
 
 Then, provide your reasoning. If you classify it as 'Definite Algorithm Feasible', describe a suitable exact algorithm. If you classify it as 'Indefinite Algorithm Required', propose an effective heuristic algorithm to start with.
@@ -41,6 +41,8 @@ Based on your previous analysis where you classified the problem as **{classific
 -   **If 'Indefinite Algorithm Required'**: Write the Python code for a first version of the heuristic algorithm you proposed. Execute the code on the given data and provide the resulting score.
 
 After providing the code and its output, outline a brief, actionable plan for how this initial attempt could be improved in future iterations.
+Keep your output quite brief, concise and insightful.
+
 Please output the scores or inference results in the last line without any other values.
 """
 
@@ -62,6 +64,8 @@ You are in the finalization phase for a problem solved with a definite algorithm
 3.  **Final Output**: Present the final, verified optimal solution and its score.
 
 If you are confident that the solution is optimal and the code is finalized, conclude your entire response with the single word "FINISHED".
+Keep your output quite brief, concise and insightful.
+
 Please output the scores or inference results in the last line without any other values.
 """
 
@@ -80,6 +84,8 @@ You are in an iterative optimization cycle for a heuristic-based problem.
 3.  **Report and Compare**: State the new result. Compare it to the best result from all previous attempts.
 
 If you believe further significant improvement is unlikely, you can conclude your entire response with the single word "FINISHED".
+Keep your output quite brief, concise and insightful.
+
 Please output the scores or inference results in the last line without any other values.
 """
 
@@ -88,6 +94,8 @@ EVALUATION_PROMPT_TEMPLATE = """
 You are an expert evaluator assessing the reasoning quality of an AI model's response to a complex problem-solving task.
 Please evaluate the following response based on five criteria. For each criterion, provide a score from 0 to 20 and a brief justification.
 
+**HISTORY reasoning context - score pairs**: you can refer to the previous content to determine whether this reasoning context is progressing or not.
+{history_pairs}
 **The AI's Response to Evaluate:**
 ---
 {reasoning_text}
@@ -309,11 +317,11 @@ class SelfOptimizingFramework:
                 "score": score
             }
     
-    def _evaluate_reasoning(self, reasoning_text: str, model_name:str,) -> dict:
+    def _evaluate_reasoning(self, reasoning_text: str, model_name:str, history_pairs:str,) -> dict:
         
         """使用 LLM-as-a-Judge 來評估推理品質"""
         self.logger.info("\n--- [啟動 Evaluator] 正在評估推理品質 ---")
-        prompt = EVALUATION_PROMPT_TEMPLATE.format(reasoning_text=reasoning_text)
+        prompt = EVALUATION_PROMPT_TEMPLATE.format(reasoning_text=reasoning_text, history_pairs=history_pairs)
         try:
             time.sleep(2)
             start_time = time.perf_counter()
@@ -522,7 +530,7 @@ class SelfOptimizingFramework:
         }
 
 
-    def run(self, model_name:str,task_description: str, points: np.array, max_iterations: int = 5, no_improvement_threshold: int = 3, max_history_length: int = 5,temp=0.7):
+    def run(self, model_name:str,task_description: str, points: np.array, max_iterations: int = 6, no_improvement_threshold: int=2, max_history_length: int = 3,temp=0.4):
         run_start_time = time.perf_counter()
         """
         執行完整的自我優化流程。
@@ -551,7 +559,7 @@ class SelfOptimizingFramework:
         self.logger.info(f"STEP 1 分析完成。 問題類型被分類為: {classification}")
         
         #將此次的推理過程進行評估
-        eval_step1, e_time1 = self._evaluate_reasoning(reasoning_step1, model_name=model_name)
+        eval_step1, e_time1 = self._evaluate_reasoning(reasoning_step1, model_name=model_name, history_pairs="None. This is the first reasoning.")
         
         #最後將處理結果進行儲存
         self.reasoning_evals.append(eval_step1)
@@ -591,7 +599,7 @@ class SelfOptimizingFramework:
             self.scores.append(self.best_score * 1.2 if self.best_score != float('inf') else 10000)
 
         #將推理過程進行評估
-        eval_step2, e_time2 = self._evaluate_reasoning(reasoning_step2, model_name=model_name)
+        eval_step2, e_time2 = self._evaluate_reasoning(reasoning_step2, model_name=model_name, history_pairs=str(self.history))
         self.reasoning_evals.append(eval_step2)
         self.history.append({"iteration": 2, "type": "Initial Implementation", "reasoning": reasoning_step2, "code": code, "output": output, "score": score, "eval": eval_step2, "r_time": r_time2, "e_time": e_time2})
         self.reasoning_times.append(r_time2)
@@ -644,7 +652,7 @@ class SelfOptimizingFramework:
             reasoning_step3 = parsed_data3["reasoning"] or "ERROR"
             
             #進行推理內容的評論
-            eval_step3, e_time_i = self._evaluate_reasoning(reasoning_step3, model_name=model_name)
+            eval_step3, e_time_i = self._evaluate_reasoning(reasoning_step3, model_name=model_name, history_pairs=str(self.history))
             self.reasoning_times.append(r_time_i)
             self.evaluation_times.append(e_time_i)
             self.reasoning_evals.append(eval_step3)
