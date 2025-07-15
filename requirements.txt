@@ -7,3 +7,4 @@ logging
 glob
 datetime
 json
+openai

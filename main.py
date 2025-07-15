@@ -97,25 +97,27 @@ Please evaluate the following response based on five criteria. For each criterio
 
 1.  **Problem Understanding & Analysis (0-20)**: How well did the model comprehend the problem's constraints, goals, and underlying computational complexity?
 2.  **Strategic Planning (0-20)**: Was the proposed algorithm or plan of action logical, well-justified, and appropriate for the problem? For iterative steps, does the plan build intelligently on previous results?
-3.  **Implementation Quality (0-20)**: If code was generated, assess its correctness, efficiency, and clarity. Does it accurately reflect the proposed strategy?
-4.  **Self-Correction & Iteration (0-20)**: How effectively did the model analyze its previous results to propose specific, actionable improvements? (This is crucial for heuristic optimization). If this is the first step, score based on the quality of the proposed future directions.
-5.  **Clarity and Communication (0-20)**: Was the explanation clear, concise, and easy for a human to understand?
+3.  **Self-Correction & Iteration (0-20)**: How effectively did the model analyze its previous results to propose specific, actionable improvements? (This is crucial for heuristic optimization). If this is the first step, score based on the quality of the proposed future directions.
+4.  **Clarity and Communication (0-20)**: Was the explanation clear, concise, and easy for a human to understand?
+5.  **Implementation Quality (0-20)**: 
+    - If code is offered, assess its correctness, efficiency, and clarity. Does it accurately reflect the proposed strategy?
+    - If code is not offered, consider the effectiveness of the plan. Is it feasible and possible for LLM to generate suitable answer? Will it be hard for it to implement?
 
 Please provide your evaluation in a JSON format like this:
 {{
     "scores": {{
         "problem_understanding": 20,
         "strategic_planning": 20,
-        "implementation_quality": 20,
         "self_correction": 20,
         "clarity": 20
+        "implementation_quality": 20,
     }},
     "justifications": {{
         "problem_understanding": "...",
         "strategic_planning": "...",
-        "implementation_quality": "...",
         "self_correction": "...",
         "clarity": "..."
+        "implementation_quality": "...",
     }},
     "total_score": 100
 }}
@@ -342,16 +344,17 @@ class SelfOptimizingFramework:
                                     "properties": {
                                         "problem_understanding": {"type": "integer"},
                                         "strategic_planning": {"type": "integer"},
-                                        "implementation_quality": {"type": "integer"},
                                         "self_correction": {"type": "integer"},
                                         "clarity": {"type": "integer"},
+                                        "implementation_quality": {"type": "integer"},
+
                                     },
                                     "required": [
                                         "problem_understanding",
                                         "strategic_planning",
-                                        "implementation_quality",
                                         "self_correction",
-                                        "clarity"
+                                        "clarity",
+                                        "implementation_quality",
                                     ]
                                 },
                                 "justifications": {
@@ -359,16 +362,16 @@ class SelfOptimizingFramework:
                                     "properties": {
                                         "problem_understanding": {"type": "string"},
                                         "strategic_planning": {"type": "string"},
+                                        "clarity": {"type": "string"},
                                         "implementation_quality": {"type": "string"},
                                         "self_correction": {"type": "string"},
-                                        "clarity": {"type": "string"},
                                     },
                                     "required": [
                                         "problem_understanding",
                                         "strategic_planning",
-                                        "implementation_quality",
                                         "self_correction",
                                         "clarity"
+                                        "implementation_quality",
                                     ]
                                 },
                                 "total_score": {"type": "integer"}
