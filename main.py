@@ -1,6 +1,6 @@
 import google.generativeai as genai
 from google.genai import types
-from google.genai import Client as clt
+from google.genai import Client as google_client
 import re
 import json
 import matplotlib.pyplot as plt
@@ -13,6 +13,10 @@ import datetime
 import time
 import traceback
 from dp_for_tsp import DP4TSP
+import openai
+from openai import OpenAI
+from config import framework_config
+
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft JhengHei', 'Arial Unicode MS', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -125,9 +129,10 @@ class SelfOptimizingFramework:
     def __init__(self):
 
         #gemini的initialization
-        self.client = clt()
+        self.client = google_client()
+        self.gpt_client = OpenAI()
 
-        
+
         # 初始化歷史紀錄
         self.history = []
         self.scores = []
@@ -141,9 +146,7 @@ class SelfOptimizingFramework:
         self.evaluation_times = []
 
 
-        self._setup_logger()
-    def _setup_logger(self):
-        """設定日誌記錄器，同時輸出到檔案和控制台"""
+        # 設定日誌記錄器，同時輸出到檔案和控制台
         self.logger = logging.getLogger("SelfOptimizingFramework")
         self.logger.setLevel(logging.INFO)
 
@@ -163,35 +166,53 @@ class SelfOptimizingFramework:
         stream_handler = logging.StreamHandler()
         stream_formatter = logging.Formatter('%(message)s') # 控制台輸出可以簡潔一些
         stream_handler.setFormatter(stream_formatter)
-        
         self.logger.addHandler(file_handler)
         self.logger.addHandler(stream_handler)
 
-    def _call_gemini(self, prompt: str, temp: float, model_name:str, ) -> Tuple[genai.types.GenerateContentResponse, float]:
-        """一個通用的 Gemini API 呼叫函式，加上 500 retry 補救"""
-        self.logger.info(f"\n--- [呼叫 Gemini] Iteration {self.iteration_count} ---")
+    def _call_llm(self, prompt: str, temp: float, model_name:str, ) -> Tuple[genai.types.GenerateContentResponse, float]:
+        
+        """一個通用的 LLM API 呼叫函式，加上 500 retry 補救"""
+        self.logger.info(f"\n--- [呼叫 LLM] Iteration {self.iteration_count} ---")
         self.logger.info(f"--- [傳送的 Prompt] ---\n{prompt}\n--------------------")
         start_time = time.perf_counter()
-
         max_retries = 3
+        
+        #嘗試三次，因為有時候會跑出500 error
         for attempt in range(max_retries):
             try:
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=[prompt],
-                    config=types.GenerateContentConfig(
-                        thinking_config=types.ThinkingConfig(thinking_budget=-1), 
-                        tools=[types.Tool(code_execution=types.ToolCodeExecution())],
+                if str.upper(model_name[0:6]) == "GEMINI":
+                    #使用gemini進行推理
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=[prompt],
+                        config=types.GenerateContentConfig(
+                            thinking_config=types.ThinkingConfig(thinking_budget=-1), 
+                            tools=[types.Tool(code_execution=types.ToolCodeExecution())],
+                            temperature=temp
+                        )
+                    )
+                    end_time = time.perf_counter()
+                    duration = end_time - start_time
+                    if response.text is not None:
+                        self.logger.info(f"--- [LLM 回應] (耗時: {duration:.2f} 秒) ---\n{response.text}\n--------------------")
+
+                elif str.upper(model_name[0:3]) == "GPT":
+                    #使用gpt進行推理
+                    response = openai.chat.completions.create(
+                        model=model_name,
+                        messages=[prompt],
+                        tools=[{"type": "code_interpreter"}],
                         temperature=temp
                     )
-                )
-                end_time = time.perf_counter()
-                duration = end_time - start_time
-                if response.text is not None:
-                    self.logger.info(f"--- [Gemini 回應] (耗時: {duration:.2f} 秒) ---\n{response.text}\n--------------------")
+                    end_time = time.perf_counter()
+                    duration = end_time - start_time
+                    if response.choices[0].message.content is not None:
+                        self.logger.info(f"--- [LLM 回應] (耗時: {duration:.2f} 秒) ---\n{response.choices[0].message.content}\n--------------------")
+                else:
+                    raise NotImplementedError
                 return response, duration
             except Exception as e:
-                self.logger.warning(f"[警告] 第 {attempt+1}/{max_retries} 次遇到 Gemini 500 Internal Error: {e}")
+                self.logger.warning(f"[警告] 第 {attempt+1}/{max_retries} 次遇到  500 Internal Error: {e}")
                 time.sleep(2 + attempt * 2)  # 指數後退，第一次等 2s，第二次等 4s...
 
         # 如果全部都失敗
@@ -208,6 +229,7 @@ class SelfOptimizingFramework:
                 return "Indefinite Algorithm Required"
             if re.search(r'definite|dp|exact', classification, re.I):
                 return "Definite Algorithm Feasible"
+            
         # 如果沒有明確匹配，預設為更複雜的路徑
         self.logger.warning("在回應中找不到明確的分類，預設為 'Indefinite Algorithm Required'。")
 
@@ -221,8 +243,6 @@ class SelfOptimizingFramework:
             code = ""
             output = ""
             score = None
-            import re # 確保 re 模組已導入
-
             # 防禦性檢查：確保 response 和 candidates 存在
             if not response or not response.candidates:
                 self.logger.warning("收到了空的或無效的回應物件。")
@@ -240,8 +260,7 @@ class SelfOptimizingFramework:
 
             full_reasoning = "\n".join(text_parts).strip()
 
-            # --- 優化後的分數解析邏輯 ---
-            
+            # --- 優化後的分數解析邏輯 ---    
             def get_last_line(text):
                 """輔助函式：取得文字中最後一個非空的行"""
                 if not text:
@@ -287,6 +306,7 @@ class SelfOptimizingFramework:
                 "output": output,
                 "score": score
             }
+    
     def _evaluate_reasoning(self, reasoning_text: str, model_name:str,) -> dict:
         
         """使用 LLM-as-a-Judge 來評估推理品質"""
@@ -294,20 +314,74 @@ class SelfOptimizingFramework:
         prompt = EVALUATION_PROMPT_TEMPLATE.format(reasoning_text=reasoning_text)
         try:
             time.sleep(2)
-            evaluator_model = genai.GenerativeModel(model_name)
-
             start_time = time.perf_counter()
-
-            response = evaluator_model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    response_mime_type="application/json"
+            if str.upper(model_name[0:6]) == "GEMINI":
+                #使用gemini當作evaluator
+                evaluator_model = genai.GenerativeModel(model_name)
+                response = evaluator_model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
+                answer = response.text
+            else:
+                #使用gpt當作evaluator
+                response = self.gpt_client.chat.completions.create(
+                    model = model_name,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={
+                        "type": "json_schema",
+                        "json_schema": {
+                            "type": "object",
+                            "properties": {
+                                "scores": {
+                                    "type": "object",
+                                    "properties": {
+                                        "problem_understanding": {"type": "integer"},
+                                        "strategic_planning": {"type": "integer"},
+                                        "implementation_quality": {"type": "integer"},
+                                        "self_correction": {"type": "integer"},
+                                        "clarity": {"type": "integer"},
+                                    },
+                                    "required": [
+                                        "problem_understanding",
+                                        "strategic_planning",
+                                        "implementation_quality",
+                                        "self_correction",
+                                        "clarity"
+                                    ]
+                                },
+                                "justifications": {
+                                    "type": "object",
+                                    "properties": {
+                                        "problem_understanding": {"type": "string"},
+                                        "strategic_planning": {"type": "string"},
+                                        "implementation_quality": {"type": "string"},
+                                        "self_correction": {"type": "string"},
+                                        "clarity": {"type": "string"},
+                                    },
+                                    "required": [
+                                        "problem_understanding",
+                                        "strategic_planning",
+                                        "implementation_quality",
+                                        "self_correction",
+                                        "clarity"
+                                    ]
+                                },
+                                "total_score": {"type": "integer"}
+                            },
+                            "required": ["scores", "justifications", "total_score"]
+                        }
+                    }
+                )
+                answer = response.choices[0].message.content
             end_time = time.perf_counter()
             duration = end_time - start_time
-            if response.text is not None:
-                eval_result = json.loads(response.text)
+            if answer is not None:
+                eval_result = json.loads(answer)
                 self.logger.info(f"評估完成。總分: {eval_result.get('total_score')}/100 (耗時: {duration:.2f} 秒)")
                 self.logger.info(f"詳細評分: {json.dumps(eval_result.get('scores'), indent=2)}")
                 return eval_result, duration
@@ -316,15 +390,12 @@ class SelfOptimizingFramework:
         except Exception as e:
             self.logger.error(f"評估推理時發生錯誤: {e}")
             return {"total_score": 0, "error": str(e)}
+
     def _plot_progress(self):
         """將數值分數和推理品質分數視覺化"""
         if not self.scores or not self.reasoning_evals:
             self.logger.info("沒有足夠的數據來生成圖表。")
-            return
-
-        # 設置中文字體
-        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft JhengHei', 'Arial Unicode MS', 'DejaVu Sans']
-        plt.rcParams['axes.unicode_minus'] = False
+            return IndexError
 
         # 計算迭代次數並建立軸線
         num_iterations = len(self.scores)
@@ -446,10 +517,9 @@ class SelfOptimizingFramework:
             'reasoning_time': reasoning_time_count,
             'eval_time': eval_time_count
         }
-        
+
+
     def run(self, model_name:str,task_description: str, points: np.array, max_iterations: int = 5, no_improvement_threshold: int = 3, max_history_length: int = 5,temp=0.7):
-        if str.upper(model_name[0:6]) != "GEMINI":
-            raise NotImplementedError
         run_start_time = time.perf_counter()
         """
         執行完整的自我優化流程。
@@ -460,30 +530,27 @@ class SelfOptimizingFramework:
             no_improvement_threshold: 連續多少次沒有進步就提早停止。
         """
         # --- STEP 1: 推理分類與初步設計 ---
-        if task_description == """
-            Solve the Traveling Salesman Problem (TSP) for a given set of 2D points.
-            The goal is to find the shortest possible tour that visits each point exactly once and returns to the origin point.
-            The distance between points is the Euclidean distance.
-            """:
-
-            initial_data = "points = " + np.array2string(points, separator=', ').replace('\n', '')
-        else:
-            initial_data = "None"
-            # return 0
-
-        print(initial_data)
-        print("===============")
+        initial_data = "data = " + np.array2string(points, separator=', ').replace('\n', '')
         self.iteration_count = 1
         self.logger.info("="*20 + " 開始新的自我優化流程 " + "="*20)
         self.logger.info(f"任務: {task_description.strip()}")
         self.logger.info(f"最大迭代次數: {max_iterations}, 無進步停止閾值: {no_improvement_threshold}")
-
-        prompt_step1 = STEP_1_PROMPT_TEMPLATE.format(task_description=task_description)        
-        response_step1, r_time1 = self._call_gemini(prompt_step1, temp, model_name)
+        
+        #建立prompt內容
+        prompt_step1 = STEP_1_PROMPT_TEMPLATE.format(task_description=task_description)
+        
+        #使用llm進行推理
+        response_step1, r_time1 = self._call_llm(prompt_step1, temp, model_name)
         reasoning_step1 = response_step1.text or "ERROR"
+        
+        #分析推理結果和類別
         classification = self._parse_classification(reasoning_step1)
         self.logger.info(f"STEP 1 分析完成。 問題類型被分類為: {classification}")
+        
+        #將此次的推理過程進行評估
         eval_step1, e_time1 = self._evaluate_reasoning(reasoning_step1, model_name=model_name)
+        
+        #最後將處理結果進行儲存
         self.reasoning_evals.append(eval_step1)
         self.history.append({"iteration": 1, "type": "Analysis", "reasoning": reasoning_step1, "eval": eval_step1, "r_time": r_time1, "e_time": e_time1})
         self.reasoning_times.append(r_time1)
@@ -491,17 +558,26 @@ class SelfOptimizingFramework:
 
         # --- STEP 2: 演算法實作與首次結果 ---
         self.iteration_count = 2
+        
+        #建立prompt內容
         task_with_data = f"{reasoning_step1}\n\nHere is the data to use:\n{initial_data}"
         prompt_step2 = STEP_2_PROMPT_TEMPLATE.format(classification=classification)
         full_prompt_step2 = f"Based on your previous analysis:\n{task_with_data}\n\nNow, follow these instructions:\n{prompt_step2}"
-        response_step2, r_time2 = self._call_gemini(full_prompt_step2, temp, model_name)
+
+        #呼叫LLM進行推理
+        response_step2, r_time2 = self._call_llm(full_prompt_step2, temp, model_name)
+        
+        #將結果進行解析
         parsed_data2 = self._parse_full_response(response_step2)
         code = parsed_data2["code"]
         output = parsed_data2["output"]
         score = parsed_data2["score"]
+        
         # 即使模型沒給文字，reasoning 也會是空字串，而不是 None
         reasoning_step2 = parsed_data2["reasoning"] or "ERROR"
-        if score is not None and score >=0.01:
+        
+        #如果有正常回答則處理
+        if score is not None and score >0:
             self.scores.append(score)
             self.best_score = score
             self.best_solution_details = f"Iteration 1: Score={score}, Code:\n{code}\nOutput:\n{output}"
@@ -511,7 +587,7 @@ class SelfOptimizingFramework:
             # 添加一個懲罰性分數以保持陣列長度一致
             self.scores.append(self.best_score * 1.2 if self.best_score != float('inf') else 10000)
 
-
+        #將推理過程進行評估
         eval_step2, e_time2 = self._evaluate_reasoning(reasoning_step2, model_name=model_name)
         self.reasoning_evals.append(eval_step2)
         self.history.append({"iteration": 2, "type": "Initial Implementation", "reasoning": reasoning_step2, "code": code, "output": output, "score": score, "eval": eval_step2, "r_time": r_time2, "e_time": e_time2})
@@ -520,17 +596,21 @@ class SelfOptimizingFramework:
 
         # --- STEP 3: 迭代優化循環 ---
         no_improvement_count = 0
+        #開始迭代處理並期待能夠優化
         for i in range(3, max_iterations + 2):
-            self.iteration_count = i
             
+            #如果連續N次的輸出數值結果沒有進步則停止優化
+            self.iteration_count = i
             if no_improvement_count >= no_improvement_threshold:
                 self.logger.info(f"\n連續 {no_improvement_threshold} 次沒有進步，提前停止迭代。")
                 break
-
-            history_log = "\n".join([f"- Iteration {h['iteration']}: Score={h.get('score', 'N/A')}, Strategy: {h['reasoning'][:150]}..." for h in self.history if 'score' in h])
+            
+            # 增加歷史紀錄
+            history_log = "\n".join([f"- Iteration {h['iteration']}: Score={h.get('score', 'N/A')}, Strategy: {h['reasoning']}" for h in self.history if 'score' in h])
             
             # 根據分類選擇不同的 Prompt
             if classification == "Definite Algorithm Feasible":
+                # Definite Algorithm 演算法迴圈
                 prompt_template = STEP_3A_PROMPT_TEMPLATE
                 last_attempt = self.history[-1]
                 prompt_step3 = prompt_template.format(
@@ -538,16 +618,21 @@ class SelfOptimizingFramework:
                     code=last_attempt.get('code', ''),
                     result=last_attempt.get('output', '')
                 )
-            else: # Indefinite Algorithm Required
+            else: 
+                # Indefinite Algorithm Required
                 prompt_template = STEP_3B_PROMPT_TEMPLATE
                 prompt_step3 = prompt_template.format(
                     best_score=self.best_score,
                     history_log=history_log
                 )
 
-            # 組合完整的上下文
+            # 組合完整的上下文prompt
             full_prompt_step3 = f"This is iteration {i}. Your task is to improve upon previous results.\n\n{prompt_step3}\n\nRemember to use the same initial data:\n{initial_data}"
-            response_step3, r_time_i = self._call_gemini(full_prompt_step3,temp, model_name)
+            
+            # call llm獲得解答
+            response_step3, r_time_i = self._call_llm(full_prompt_step3,temp, model_name)
+            
+            #將輸出的結果進行parsing
             parsed_data3 = self._parse_full_response(response_step3)
             code = parsed_data3["code"]
             output = parsed_data3["output"]
@@ -555,11 +640,19 @@ class SelfOptimizingFramework:
             # 即使模型沒給文字，reasoning 也會是空字串，而不是 None
             reasoning_step3 = parsed_data3["reasoning"] or "ERROR"
             
+            #進行推理內容的評論
+            eval_step3, e_time_i = self._evaluate_reasoning(reasoning_step3, model_name=model_name)
+            self.reasoning_times.append(r_time_i)
+            self.evaluation_times.append(e_time_i)
+            self.reasoning_evals.append(eval_step3)
+            
+            # 如果模型自己覺得OK就OK
             if "FINISHED" in reasoning_step3:
                 self.logger.info("\n模型回傳 'FINISHED'，結束優化流程。")
                 break
             
-            if score is not None and score >=0.01:
+            # 紀錄分數，如果破紀錄則記錄此紀錄，阿連續N次都沒有進步的話也停止優化
+            if score is not None and score >0:
                 self.scores.append(score)
                 self.logger.info(f"Iteration {i} 完成。分數: {score} (歷史最佳: {self.best_score})")
                 if score < self.best_score:
@@ -578,21 +671,16 @@ class SelfOptimizingFramework:
                 self.logger.info(f"計為一次未進步。連續未進步次數: {no_improvement_count}")
 
 
-            eval_step3, e_time_i = self._evaluate_reasoning(reasoning_step3, model_name=model_name)
-            self.reasoning_times.append(r_time_i)
-            self.evaluation_times.append(e_time_i)
-            self.reasoning_evals.append(eval_step3)
             self.history.append({"iteration": i, "type": "Optimization", "reasoning": reasoning_step3, "code": code, "output": output, "score": score, "eval": eval_step3, "r_time": r_time_i, "e_time": e_time_i})
 
             if len(self.history) > max_history_length:
                 self.history.pop(0)
+
         # --- 最終結果 ---
         run_end_time = time.perf_counter()
         total_run_time = run_end_time - run_start_time
-
         self.logger.info("\n\n" + "="*20 + " 優化流程結束 " + "="*20)
         self.logger.info(f"總執行時間: {total_run_time:.2f} 秒")
-
         self.logger.info(f"總共執行了 {len(self.scores)} 次有效的迭代。")
         self.logger.info(f"找到的最佳分數為: {self.best_score}")
         self.logger.info("\n--- [最佳解的詳細資訊] ---\n" + self.best_solution_details)
@@ -602,13 +690,13 @@ class SelfOptimizingFramework:
             The goal is to find the shortest possible tour that visits each point exactly once and returns to the origin point.
             The distance between points is the Euclidean distance.
             """:
-
             self.logger.info("額外加碼:與最佳解之間的距離")
             DP_start_time = time.perf_counter()
             dp_calculation = DP4TSP(points)
             dp_calculation.run(points)
             total_DP_run_time = time.perf_counter() - DP_start_time
             self.logger.info(f"DP執行時間: {total_DP_run_time:.2f} 秒")
+
         # 在繪製圖表前可以先驗證數據
         data_stats = self._validate_data_consistency()
         if data_stats['reasoning'] != data_stats['scores'] + 1:
@@ -630,41 +718,41 @@ if __name__ == '__main__':
             The goal is to find the shortest possible tour that visits each point exactly once and returns to the origin point.
             The distance between points is the Euclidean distance.
             """
-            points = np.random.rand(20, 2)
+            data_points = np.random.rand(20, 2)
         # 如果不是預設問題的話，那麼要輸入問題敘述和資料
         else:
             TASK_DESCRIPTION = task_input
-            points = str(input("請輸入相關的資料(可略)"))
-        print(points)
+            data_points = str(input("請輸入相關的資料，用逗號分割(可略)"))
+        print(data_points)
 
         # configure
         load_dotenv()
-        model_name = str(input("請輸入你想使用的model名稱(gemini-2.5-pro, gpt-4o)"))
+        model_name = str(input("請輸入你想使用的model名稱(gemini-2.5-pro, gpt-4o...)"))
         if str.upper(model_name[0:6]) == "GEMINI":
             GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "YOUR_GEMINI_API_KEY")
             if GOOGLE_API_KEY == "YOUR_GEMINI_API_KEY":
                 print("請設定您的 GOOGLE_API_KEY 環境變數或在程式碼中直接替換 'YOUR_GEMINI_API_KEY'")
+                raise IndexError
             genai.configure(api_key=GOOGLE_API_KEY)
         elif str.upper(model_name[0:3]) == "GPT":
             OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
             if OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
                 print("請設定您的 YOUR_OPENAI_API_KEY 環境變數或在程式碼中直接替換 'YOUR_OPENAI_API_KEY'")
-            genai.configure(api_key=OPENAI_API_KEY)
+                raise IndexError
+            openai.api_key = OPENAI_API_KEY
         else:
             print("請輸入正確的模型名稱。")
+            raise NotImplementedError
+
         print("============================")
         # 創建並運行框架
         framework = SelfOptimizingFramework()
         framework.run(
-            model_name="gemini-2.5-flash",
+            model_name=model_name,
             task_description=TASK_DESCRIPTION,
-            points=points,
-            max_iterations=6,
-            no_improvement_threshold=2,
-            max_history_length = 3,
-            temp=0.4
+            points=data_points,
+            **framework_config  # ← 把 config.py 裡的參數展開塞進來
         )
-
     except Exception as e:
         print(f"發生錯誤: {e}")
         print(f"錯誤詳情:\n{traceback.format_exc()}")
