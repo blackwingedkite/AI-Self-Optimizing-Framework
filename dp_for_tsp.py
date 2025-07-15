@@ -1,12 +1,11 @@
 import numpy as np
 from typing import Tuple, List
 import re
-
 class DP4TSP:
     def __init__(self):
-        self.points = np.ndarray()
-        self.distance_matrix = np.ndarray()
-        self.min_cost = 0
+        self.points = np.array([]) 
+        self.distance_matrix = np.array([])
+        self.min_cost = float('inf')  
         self.path = []
 
     def _calculate_distance_matrix(self, points: np.ndarray) -> np.ndarray:

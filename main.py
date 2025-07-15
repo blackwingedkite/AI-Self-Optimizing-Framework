@@ -210,7 +210,7 @@ class SelfOptimizingFramework:
                     #使用gpt進行推理
                     response = openai.chat.completions.create(
                         model=model_name,
-                        messages=[prompt],
+                        messages=[{"role": "user", "content": prompt}],
                         tools=[{"type": "code_interpreter"}],
                         temperature=temp
                     )
@@ -259,7 +259,14 @@ class SelfOptimizingFramework:
                 return {
                     "reasoning": "", "code": "", "output": "", "score": None
                 }
-
+            print(response)
+            print("-------------------")
+            print(response.candidates[0])
+            print("-------------------")
+            print(response.candidates[0].content)
+            print("-------------------")
+            print(response.candidates[0].content.parts)
+            print("-------------------")
             for part in response.candidates[0].content.parts:
                 if hasattr(part, 'text') and part.text:
                     text_parts.append(part.text)
@@ -504,32 +511,6 @@ class SelfOptimizingFramework:
         self.logger.info(f"進度圖表已儲存至 {plot_filename}")
         plt.show()
 
-    def _validate_data_consistency(self):
-        """驗證各種數據的一致性"""
-        scores_count = len(self.scores) if self.scores else 0
-        reasoning_count = len(self.reasoning_evals) if self.reasoning_evals else 0
-        reasoning_time_count = len(self.reasoning_times) if self.reasoning_times else 0
-        eval_time_count = len(self.evaluation_times) if self.evaluation_times else 0
-        
-        self.logger.info("=== 數據一致性檢查 ===")
-        self.logger.info(f"數值分數記錄: {scores_count}")
-        self.logger.info(f"推理品質評估: {reasoning_count}")
-        self.logger.info(f"推理時間記錄: {reasoning_time_count}")
-        self.logger.info(f"評估時間記錄: {eval_time_count}")
-        
-        # 檢查預期的關係
-        if reasoning_count > 0 and scores_count > 0:
-            if reasoning_count != scores_count + 1:
-                self.logger.warning(f"數據不一致: 推理評估({reasoning_count}) 應該比數值分數({scores_count})多1次")
-        
-        return {
-            'scores': scores_count,
-            'reasoning': reasoning_count,
-            'reasoning_time': reasoning_time_count,
-            'eval_time': eval_time_count
-        }
-
-
     def run(self, model_name:str,task_description: str, points: np.array, max_iterations: int = 6, no_improvement_threshold: int=2, max_history_length: int = 3,temp=0.4):
         run_start_time = time.perf_counter()
         """
@@ -541,7 +522,7 @@ class SelfOptimizingFramework:
             no_improvement_threshold: 連續多少次沒有進步就提早停止。
         """
         # --- STEP 1: 推理分類與初步設計 ---
-        initial_data = "data = " + np.array2string(points, separator=', ').replace('\n', '')
+        initial_data = "data = " + str(points).replace('\n', '')
         self.iteration_count = 1
         self.logger.info("="*20 + " 開始新的自我優化流程 " + "="*20)
         self.logger.info(f"任務: {task_description.strip()}")
@@ -617,7 +598,7 @@ class SelfOptimizingFramework:
                 break
             
             # 增加歷史紀錄
-            history_log = "\n".join([f"- Iteration {h['iteration']}: Score={h.get('score', 'N/A')}, Strategy: {h['reasoning']}" for h in self.history if 'score' in h])
+            history_log = "\n".join([f"- Iteration {h['iteration']}: Score={h.get('score', 'N/A')}, Strategy: {h['reasoning'][0:200]}" for h in self.history if 'score' in h])
             
             # 根據分類選擇不同的 Prompt
             if classification == "Definite Algorithm Feasible":
@@ -703,15 +684,10 @@ class SelfOptimizingFramework:
             """:
             self.logger.info("額外加碼:與最佳解之間的距離")
             DP_start_time = time.perf_counter()
-            dp_calculation = DP4TSP(points)
+            dp_calculation = DP4TSP()
             dp_calculation.run(points)
             total_DP_run_time = time.perf_counter() - DP_start_time
             self.logger.info(f"DP執行時間: {total_DP_run_time:.2f} 秒")
-
-        # 在繪製圖表前可以先驗證數據
-        data_stats = self._validate_data_consistency()
-        if data_stats['reasoning'] != data_stats['scores'] + 1:
-            self.logger.warning("數據關係可能不正確")
 
         self._plot_progress()
 
@@ -738,7 +714,7 @@ if __name__ == '__main__':
 
         # configure
         load_dotenv()
-        model_name = str(input("請輸入你想使用的model名稱(gemini-2.5-pro, gpt-4o...)"))
+        model_name = str(input("請輸入你想使用的model名稱(gemini-2.5-pro, gpt-4o..., 目前不支援gpt-2.5-flash因為輸出結構和pro不同)"))
         if str.upper(model_name[0:6]) == "GEMINI":
             GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "YOUR_GEMINI_API_KEY")
             if GOOGLE_API_KEY == "YOUR_GEMINI_API_KEY":
