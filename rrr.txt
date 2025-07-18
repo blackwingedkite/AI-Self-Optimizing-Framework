@@ -1,0 +1,24 @@
+    def _evaluate_reasoning(self, reasoning_text: str, history_pairs:str,) -> dict:
+        """使用 LLM-as-a-Judge 來評估推理品質"""
+        self.logger.info("\n--- [啟動 Evaluator] 正在評估推理品質 ---")
+        prompt = EVALUATION_PROMPT_TEMPLATE.format(reasoning_text=reasoning_text, history_pairs=history_pairs)
+        try:
+            evaluator_model = genai.GenerativeModel(model_name)
+            response = evaluator_model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            answer = response.text
+            end_time = time.perf_counter()
+            if answer is not None:
+                eval_result = json.loads(answer)
+                self.logger.info(f"評估完成。總分: {eval_result.get('total_score')}/100")
+                self.logger.info(f"詳細評分: {json.dumps(eval_result.get('scores'), indent=2)}")
+                return eval_result
+            else:
+                return "error"
+        except Exception as e:
+            self.logger.error(f"評估推理時發生錯誤: {e}")
+            raise IndexError

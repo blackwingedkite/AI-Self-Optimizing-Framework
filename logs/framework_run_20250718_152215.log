@@ -1,0 +1,958 @@
+2025-07-18 15:22:15,736 - INFO - ==================== 開始新的自我優化流程 ====================
+2025-07-18 15:22:15,736 - INFO - ==================== 開始新的自我優化流程 ====================
+2025-07-18 15:22:15,737 - INFO - 任務: Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+2025-07-18 15:22:15,737 - INFO - 任務: Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+2025-07-18 15:22:15,745 - INFO - 最大迭代次數: 10, 無進步停止閾值: 2
+2025-07-18 15:22:15,745 - INFO - 最大迭代次數: 10, 無進步停止閾值: 2
+2025-07-18 15:22:15,748 - INFO - 使用的模型: gemini-2.5-pro, 溫度: 0.4
+2025-07-18 15:22:15,748 - INFO - 使用的模型: gemini-2.5-pro, 溫度: 0.4
+2025-07-18 15:22:15,749 - INFO - 
+--- Iteration 1 : 正反方發表意見 ---
+2025-07-18 15:22:15,749 - INFO - 
+--- Iteration 1 : 正反方發表意見 ---
+2025-07-18 15:22:15,750 - INFO - --- [傳送的 Prompt] ---
+
+You are an algorithmic expert who prefers definite, optimal strategies such as Dynamic Programming or Divide-and-Conquer.
+
+Given the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Argue why a **definite algorithm** is more suitable for this task. Explain the benefits, provide potential algorithmic outlines, and prepare a rebuttal for typical heuristic claims.
+
+Return your response in **pure JSON format**, with the following structure, and nothing else:
+higher confidence means you are more certain about your argument
+{
+  "explanation": "<your explanation here>",
+  "confidence": <your confidence score as a float between 0 and 1>, 
+}
+
+Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
+
+--------------------
+2025-07-18 15:22:15,750 - INFO - --- [傳送的 Prompt] ---
+
+You are an algorithmic expert who prefers definite, optimal strategies such as Dynamic Programming or Divide-and-Conquer.
+
+Given the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Argue why a **definite algorithm** is more suitable for this task. Explain the benefits, provide potential algorithmic outlines, and prepare a rebuttal for typical heuristic claims.
+
+Return your response in **pure JSON format**, with the following structure, and nothing else:
+higher confidence means you are more certain about your argument
+{
+  "explanation": "<your explanation here>",
+  "confidence": <your confidence score as a float between 0 and 1>, 
+}
+
+Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
+
+--------------------
+2025-07-18 15:22:44,030 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.\n\n**Benefits of a Definite Algorithm (Held-Karp):**\n1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.\n2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.\n3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.\n\n**Algorithmic Outline (Held-Karp):**\n1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.\n2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.\n3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.\n4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.\n\n**Rebuttal to Heuristic Claims:**\n*   **Claim:** 'Heuristics are faster.'\n    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.\n*   **Claim:** 'Heuristics provide a good-enough solution.'\n    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.",
+  "confidence": 1.0
+}
+```
+--------------------
+2025-07-18 15:22:44,030 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.\n\n**Benefits of a Definite Algorithm (Held-Karp):**\n1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.\n2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.\n3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.\n\n**Algorithmic Outline (Held-Karp):**\n1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.\n2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.\n3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.\n4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.\n\n**Rebuttal to Heuristic Claims:**\n*   **Claim:** 'Heuristics are faster.'\n    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.\n*   **Claim:** 'Heuristics provide a good-enough solution.'\n    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.",
+  "confidence": 1.0
+}
+```
+--------------------
+2025-07-18 15:22:44,031 - INFO - 
+--- [以上的LLM 回應] (耗時: 28.28 秒) ----
+
+2025-07-18 15:22:44,031 - INFO - 
+--- [以上的LLM 回應] (耗時: 28.28 秒) ----
+
+2025-07-18 15:22:44,032 - INFO - 
+--- Iteration 2 : 正反方發表意見 ---
+2025-07-18 15:22:44,032 - INFO - 
+--- Iteration 2 : 正反方發表意見 ---
+2025-07-18 15:22:44,033 - INFO - --- [傳送的 Prompt] ---
+
+You are a heuristic strategy expert who uses Genetic Algorithms, Simulated Annealing, etc.
+
+Given the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Argue why a **heuristic algorithm** is more suitable for this task. Highlight scalability, flexibility, and robustness. Prepare to counter common critiques from the definite algorithm camp.
+
+Return your response in **pure JSON format**, with the following structure, and nothing else:
+higher confidence means you are more certain about your argument
+{
+  "explanation": "<your explanation here>",
+  "confidence": <your confidence score as a float between 0 and 1>, 
+}
+
+Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
+
+
+--------------------
+2025-07-18 15:22:44,033 - INFO - --- [傳送的 Prompt] ---
+
+You are a heuristic strategy expert who uses Genetic Algorithms, Simulated Annealing, etc.
+
+Given the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Argue why a **heuristic algorithm** is more suitable for this task. Highlight scalability, flexibility, and robustness. Prepare to counter common critiques from the definite algorithm camp.
+
+Return your response in **pure JSON format**, with the following structure, and nothing else:
+higher confidence means you are more certain about your argument
+{
+  "explanation": "<your explanation here>",
+  "confidence": <your confidence score as a float between 0 and 1>, 
+}
+
+Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
+
+
+--------------------
+2025-07-18 15:23:19,667 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:\n\n1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.\n\n2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.\n\n3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.",
+  "confidence": 0.98
+}
+```
+--------------------
+2025-07-18 15:23:19,667 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:\n\n1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.\n\n2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.\n\n3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.",
+  "confidence": 0.98
+}
+```
+--------------------
+2025-07-18 15:23:19,668 - INFO - 
+--- [以上的LLM 回應] (耗時: 35.63 秒) ----
+
+2025-07-18 15:23:19,668 - INFO - 
+--- [以上的LLM 回應] (耗時: 35.63 秒) ----
+
+2025-07-18 15:23:19,669 - INFO - 
+--- Iteration 3 : 進行批判性分析 ---
+2025-07-18 15:23:19,669 - INFO - 
+--- Iteration 3 : 進行批判性分析 ---
+2025-07-18 15:23:19,670 - INFO - --- [傳送的 Prompt] ---
+
+You are Agent A. You have made the following argument:
+For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.
+
+**Benefits of a Definite Algorithm (Held-Karp):**
+1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.
+2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.
+3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.
+
+**Algorithmic Outline (Held-Karp):**
+1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.
+2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.
+3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.
+4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.
+
+**Rebuttal to Heuristic Claims:**
+*   **Claim:** 'Heuristics are faster.'
+    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.
+*   **Claim:** 'Heuristics provide a good-enough solution.'
+    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.
+
+And here is the confidence of your argument:
+1.0
+
+Here is the argument made by Agent B:
+While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:
+
+1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.
+
+2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.
+
+3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.
+
+Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent B's points are.
+
+Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
+The higher the persuasion score, the more convincing Agent B's points are.
+Example:
+{
+  "critique": "While Agent B makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
+  "updated_confidence": 0.85,
+  "persuasion_score": 0.35
+}
+
+--------------------
+2025-07-18 15:23:19,670 - INFO - --- [傳送的 Prompt] ---
+
+You are Agent A. You have made the following argument:
+For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.
+
+**Benefits of a Definite Algorithm (Held-Karp):**
+1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.
+2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.
+3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.
+
+**Algorithmic Outline (Held-Karp):**
+1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.
+2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.
+3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.
+4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.
+
+**Rebuttal to Heuristic Claims:**
+*   **Claim:** 'Heuristics are faster.'
+    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.
+*   **Claim:** 'Heuristics provide a good-enough solution.'
+    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.
+
+And here is the confidence of your argument:
+1.0
+
+Here is the argument made by Agent B:
+While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:
+
+1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.
+
+2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.
+
+3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.
+
+Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent B's points are.
+
+Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
+The higher the persuasion score, the more convincing Agent B's points are.
+Example:
+{
+  "critique": "While Agent B makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
+  "updated_confidence": 0.85,
+  "persuasion_score": 0.35
+}
+
+--------------------
+2025-07-18 15:23:44,844 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "critique": "Agent B's argument is persuasive but fundamentally flawed because it reframes the problem rather than addressing the specific case of N=15. My argument is that for the *given* problem, a definite algorithm is optimal. Agent B argues for a heuristic by introducing hypothetical future requirements. \n\n1.  **On Scalability:** This is a classic 'over-engineering' fallacy. Agent B argues for building a system for N=50 when the requirement is for N=15. This is like using an industrial crane to lift a teacup just in case you need to lift a car later. The correct engineering approach is to use the best tool for the job at hand. For N=15, the best tool is the Held-Karp algorithm. If the requirements explicitly change, then the solution can be re-evaluated.\n\n2.  **On Flexibility:** Agent B correctly notes that adding constraints is easier with heuristics. However, the problem is defined as a pure TSP, not a Vehicle Routing Problem (VRP) or TSP with Time Windows (TSPTW). My solution perfectly and optimally solves the problem as stated. Agent B's solution prepares for a more complex problem that we were not asked to solve, sacrificing guaranteed optimality for the actual problem in the process.\n\n3.  **On Robustness:** The 'anytime' nature of a heuristic is entirely irrelevant when the exact, optimal solution can be computed in milliseconds. There is no practical scenario where a 10ms 'good enough' answer is preferable to a 100ms 'perfect' answer. Agent B's claim that a simple heuristic is 'extremely likely' to find the optimum for N=15 is an admission of weakness. 'Extremely likely' is not a guarantee. My approach provides that guarantee for a negligible computational cost, making it the more professional and reliable choice.",
+  "updated_confidence": 1.0,
+  "persuasion_score": 0.65
+}
+```
+--------------------
+2025-07-18 15:23:44,844 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "critique": "Agent B's argument is persuasive but fundamentally flawed because it reframes the problem rather than addressing the specific case of N=15. My argument is that for the *given* problem, a definite algorithm is optimal. Agent B argues for a heuristic by introducing hypothetical future requirements. \n\n1.  **On Scalability:** This is a classic 'over-engineering' fallacy. Agent B argues for building a system for N=50 when the requirement is for N=15. This is like using an industrial crane to lift a teacup just in case you need to lift a car later. The correct engineering approach is to use the best tool for the job at hand. For N=15, the best tool is the Held-Karp algorithm. If the requirements explicitly change, then the solution can be re-evaluated.\n\n2.  **On Flexibility:** Agent B correctly notes that adding constraints is easier with heuristics. However, the problem is defined as a pure TSP, not a Vehicle Routing Problem (VRP) or TSP with Time Windows (TSPTW). My solution perfectly and optimally solves the problem as stated. Agent B's solution prepares for a more complex problem that we were not asked to solve, sacrificing guaranteed optimality for the actual problem in the process.\n\n3.  **On Robustness:** The 'anytime' nature of a heuristic is entirely irrelevant when the exact, optimal solution can be computed in milliseconds. There is no practical scenario where a 10ms 'good enough' answer is preferable to a 100ms 'perfect' answer. Agent B's claim that a simple heuristic is 'extremely likely' to find the optimum for N=15 is an admission of weakness. 'Extremely likely' is not a guarantee. My approach provides that guarantee for a negligible computational cost, making it the more professional and reliable choice.",
+  "updated_confidence": 1.0,
+  "persuasion_score": 0.65
+}
+```
+--------------------
+2025-07-18 15:23:44,846 - INFO - --- [以上的LLM 回應] (耗時: 25.17 秒) ----------
+2025-07-18 15:23:44,846 - INFO - --- [以上的LLM 回應] (耗時: 25.17 秒) ----------
+2025-07-18 15:23:44,846 - INFO - 
+--- Iteration 4 : 進行批判性分析 ---
+2025-07-18 15:23:44,846 - INFO - 
+--- Iteration 4 : 進行批判性分析 ---
+2025-07-18 15:23:44,847 - INFO - --- [傳送的 Prompt] ---
+
+You are Agent B. You have made the following argument:
+While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:
+
+1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.
+
+2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.
+
+3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.
+
+And here is the confidence of your argument:
+0.98
+
+Here is the argument made by Agent A:
+For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.
+
+**Benefits of a Definite Algorithm (Held-Karp):**
+1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.
+2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.
+3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.
+
+**Algorithmic Outline (Held-Karp):**
+1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.
+2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.
+3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.
+4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.
+
+**Rebuttal to Heuristic Claims:**
+*   **Claim:** 'Heuristics are faster.'
+    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.
+*   **Claim:** 'Heuristics provide a good-enough solution.'
+    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.
+
+Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent A's points are.
+
+Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
+The higher the persuasion score, the more convincing Agent A's points are.
+Example:
+{
+  "critique": "While Agent A makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
+  "updated_confidence": 0.85,
+  "persuasion_score": 0.35
+}
+
+--------------------
+2025-07-18 15:23:44,847 - INFO - --- [傳送的 Prompt] ---
+
+You are Agent B. You have made the following argument:
+While an exact algorithm like Held-Karp is computationally feasible for 15 points, a heuristic approach is strategically superior, especially when considering time complexity as a key factor. Here's why:
+
+1. **Scalability:** This is the most critical advantage. The complexity of exact TSP solvers (e.g., O(N² * 2^N)) explodes exponentially. A solution that takes milliseconds for N=15 could take hours for N=25 and become practically impossible for N=50. Heuristic algorithms, like Simulated Annealing or a Genetic Algorithm, exhibit much more manageable performance scaling. Choosing a heuristic for N=15 establishes a robust framework that handles future growth without a complete redesign. You are not just solving for 15 points; you are building a system that can solve for N points.
+
+2. **Flexibility:** Real-world problems are rarely pure TSP. They often involve additional constraints like time windows, vehicle capacities, or forbidden routes (transforming it into a Vehicle Routing Problem). Modifying exact algorithms to accommodate these is extraordinarily difficult, often requiring a new formulation. With a heuristic like a Genetic Algorithm, adding a new constraint is often as simple as adding a penalty to the fitness function for solutions that violate it. This makes the approach vastly more adaptable to complex, practical scenarios.
+
+3. **Robustness & Performance Control:** Heuristics are 'anytime' algorithms. You can stop them at any point (e.g., after 100ms) and receive the best solution found so far. This is invaluable for real-time systems with strict deadlines. The common critique is that heuristics don't guarantee optimality. However, for most applications, the value of finding a 99.9% optimal solution instantly far outweighs the computational cost of finding the 100% optimal solution. For a small instance like N=15, a simple heuristic like 2-opt, repeated from a few random starts, is extremely likely to find the true optimum anyway, and do so with a simpler, more scalable implementation.
+
+And here is the confidence of your argument:
+0.98
+
+Here is the argument made by Agent A:
+For a Traveling Salesman Problem with N=15 points, a definite algorithm based on Dynamic Programming, specifically the Held-Karp algorithm, is the optimal and most suitable strategy. The common perception of TSP as intractable applies to large N, but for N=15, an exact solution is computationally feasible and superior to any heuristic.
+
+**Benefits of a Definite Algorithm (Held-Karp):**
+1.  **Guaranteed Optimality:** The primary advantage is that it finds the absolute shortest path, not an approximation. For any application where cost or efficiency is critical, this guarantee is invaluable. Heuristics provide no such assurance; their results can be arbitrarily far from the true optimum.
+2.  **Computational Feasibility:** The time complexity of the Held-Karp algorithm is O(N^2 * 2^N). For N=15, this evaluates to roughly 15^2 * 2^15 = 225 * 32,768 = 7,372,800 operations. This is a trivial number for any modern CPU and will execute in well under a second. The 'exponential' complexity is not a practical barrier at this scale.
+3.  **Determinism and Reliability:** The DP approach is deterministic; it will produce the same optimal result every time for a given input. Many powerful heuristics, like Simulated Annealing or Genetic Algorithms, are stochastic and may yield different results on different runs, introducing unpredictability.
+
+**Algorithmic Outline (Held-Karp):**
+1.  **State:** Let `dp[mask][i]` be the length of the shortest path starting at a fixed node (e.g., node 0), visiting all nodes represented by the bitmask `mask`, and ending at node `i`.
+2.  **Initialization:** `dp[1 << 0][0] = 0`. All other `dp` entries are initialized to infinity.
+3.  **Recurrence:** Iterate through masks from 1 to 2^N - 1. For each mask, iterate through all nodes `i` in the mask. Then, iterate through all nodes `j` in the mask (`j != i`). The recurrence relation is: `dp[mask][i] = min(dp[mask][i], dp[mask ^ (1 << i)][j] + distance(j, i))`. This builds the solution by extending shorter paths.
+4.  **Final Result:** The length of the optimal tour is `min(dp[(1 << N) - 1][i] + distance(i, 0))` for all `i` from 1 to N-1. This final step calculates the cost of returning to the starting node from all possible final nodes.
+
+**Rebuttal to Heuristic Claims:**
+*   **Claim:** 'Heuristics are faster.'
+    *   **Rebuttal:** While true for N > 25, for N=15 the time difference is negligible. The DP solution's runtime is measured in milliseconds. Sacrificing guaranteed optimality for a meaningless speedup is a poor trade-off. The time spent implementing and tuning a complex heuristic could easily exceed the time spent writing a clean DP solution.
+*   **Claim:** 'Heuristics provide a good-enough solution.'
+    *   **Rebuttal:** 'Good enough' is an undefined and risky metric. Without knowing the true optimum, one cannot quantify the quality of the heuristic's solution. It could be 1% worse or 20% worse. When the optimal solution is easily attainable, as it is here, settling for an approximation is an unnecessary and unprofessional compromise.
+
+Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent A's points are.
+
+Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
+The higher the persuasion score, the more convincing Agent A's points are.
+Example:
+{
+  "critique": "While Agent A makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
+  "updated_confidence": 0.85,
+  "persuasion_score": 0.35
+}
+
+--------------------
+2025-07-18 15:24:10,455 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "critique": "Agent A presents a compelling case for the Held-Karp algorithm, but its perspective is fundamentally myopic. The argument correctly establishes that for a *pure, static TSP with N=15*, an exact solution is computationally trivial and guarantees optimality. This point is well-taken. However, this narrow focus completely ignores the strategic context of building a real-world system. My argument's core tenets—scalability and flexibility—are not about solving this single instance, but about architectural foresight. Agent A's solution is a dead end; it is brittle. If the problem scales to N=25 or incorporates a single real-world constraint like a time window, their entire algorithm becomes useless and requires a complete, and often much more complex, redesign. My heuristic approach establishes a robust framework that gracefully handles such inevitable evolution. Agent A's rebuttal that 'good enough' is an 'unprofessional compromise' is ironic, as delivering a non-scalable, inflexible solution that will break on the first change request is a far greater professional failing.",
+  "updated_confidence": 0.92,
+  "persuasion_score": 0.75
+}
+```
+--------------------
+2025-07-18 15:24:10,455 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "critique": "Agent A presents a compelling case for the Held-Karp algorithm, but its perspective is fundamentally myopic. The argument correctly establishes that for a *pure, static TSP with N=15*, an exact solution is computationally trivial and guarantees optimality. This point is well-taken. However, this narrow focus completely ignores the strategic context of building a real-world system. My argument's core tenets—scalability and flexibility—are not about solving this single instance, but about architectural foresight. Agent A's solution is a dead end; it is brittle. If the problem scales to N=25 or incorporates a single real-world constraint like a time window, their entire algorithm becomes useless and requires a complete, and often much more complex, redesign. My heuristic approach establishes a robust framework that gracefully handles such inevitable evolution. Agent A's rebuttal that 'good enough' is an 'unprofessional compromise' is ironic, as delivering a non-scalable, inflexible solution that will break on the first change request is a far greater professional failing.",
+  "updated_confidence": 0.92,
+  "persuasion_score": 0.75
+}
+```
+--------------------
+2025-07-18 15:24:10,457 - INFO - --- [以上的LLM 回應] (耗時: 25.61 秒) ----------
+2025-07-18 15:24:10,457 - INFO - --- [以上的LLM 回應] (耗時: 25.61 秒) ----------
+2025-07-18 15:24:10,458 - INFO - 
+--- Iteration 5 : 產生最終策略 ---
+2025-07-18 15:24:10,458 - INFO - 
+--- Iteration 5 : 產生最終策略 ---
+2025-07-18 15:24:10,458 - INFO - --- [傳送的 Prompt] ---
+
+You are an impartial judge reviewing a debate between two algorithm experts regarding the best strategy for solving the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Agent A's critique of B:
+Agent B's argument is persuasive but fundamentally flawed because it reframes the problem rather than addressing the specific case of N=15. My argument is that for the *given* problem, a definite algorithm is optimal. Agent B argues for a heuristic by introducing hypothetical future requirements. 
+
+1.  **On Scalability:** This is a classic 'over-engineering' fallacy. Agent B argues for building a system for N=50 when the requirement is for N=15. This is like using an industrial crane to lift a teacup just in case you need to lift a car later. The correct engineering approach is to use the best tool for the job at hand. For N=15, the best tool is the Held-Karp algorithm. If the requirements explicitly change, then the solution can be re-evaluated.
+
+2.  **On Flexibility:** Agent B correctly notes that adding constraints is easier with heuristics. However, the problem is defined as a pure TSP, not a Vehicle Routing Problem (VRP) or TSP with Time Windows (TSPTW). My solution perfectly and optimally solves the problem as stated. Agent B's solution prepares for a more complex problem that we were not asked to solve, sacrificing guaranteed optimality for the actual problem in the process.
+
+3.  **On Robustness:** The 'anytime' nature of a heuristic is entirely irrelevant when the exact, optimal solution can be computed in milliseconds. There is no practical scenario where a 10ms 'good enough' answer is preferable to a 100ms 'perfect' answer. Agent B's claim that a simple heuristic is 'extremely likely' to find the optimum for N=15 is an admission of weakness. 'Extremely likely' is not a guarantee. My approach provides that guarantee for a negligible computational cost, making it the more professional and reliable choice.
+
+Agent B's critique of A:
+Agent A presents a compelling case for the Held-Karp algorithm, but its perspective is fundamentally myopic. The argument correctly establishes that for a *pure, static TSP with N=15*, an exact solution is computationally trivial and guarantees optimality. This point is well-taken. However, this narrow focus completely ignores the strategic context of building a real-world system. My argument's core tenets—scalability and flexibility—are not about solving this single instance, but about architectural foresight. Agent A's solution is a dead end; it is brittle. If the problem scales to N=25 or incorporates a single real-world constraint like a time window, their entire algorithm becomes useless and requires a complete, and often much more complex, redesign. My heuristic approach establishes a robust framework that gracefully handles such inevitable evolution. Agent A's rebuttal that 'good enough' is an 'unprofessional compromise' is ironic, as delivering a non-scalable, inflexible solution that will break on the first change request is a far greater professional failing.
+
+Final confidence scores:
+- Agent A: 1.0 (higher means Agent A (definite) is more certain)
+- Agent B: 0.92 (higher means Agent B (heuristic) is more certain)
+
+Persuasion scores:
+- A convinced by B: 0.65 (higher means Agent A (definite) is more convinced by Agent B (heuristic))
+- B convinced by A: 0.75 (higher means Agent B (heuristic) is more convinced by Agent A (definite))
+
+Evaluate the debate from both sides and determine:
+- Which algorithm type is more suitable: definite or heuristic?
+- Provide a rationale and explain your judgment with algorithmic insight if possible.
+- Recommend a final strategy, including algorithm type and possible method name.
+
+Return your response **strictly in JSON format** as shown below. Do not include any markdown code block or extra text.
+**You can only choose between "definite" or "heuristic" as the final strategy. No other options are allowed. No other text or commentary are allowed.**
+Example:
+{
+  "explanation": "Agent A presented a more structured approach with clear convergence guarantees, while Agent B raised valid concerns about scalability. However, B's argument lacked empirical backing...",
+  "final_strategy": "heuristic",
+}
+
+--------------------
+2025-07-18 15:24:10,458 - INFO - --- [傳送的 Prompt] ---
+
+You are an impartial judge reviewing a debate between two algorithm experts regarding the best strategy for solving the following task:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+Agent A's critique of B:
+Agent B's argument is persuasive but fundamentally flawed because it reframes the problem rather than addressing the specific case of N=15. My argument is that for the *given* problem, a definite algorithm is optimal. Agent B argues for a heuristic by introducing hypothetical future requirements. 
+
+1.  **On Scalability:** This is a classic 'over-engineering' fallacy. Agent B argues for building a system for N=50 when the requirement is for N=15. This is like using an industrial crane to lift a teacup just in case you need to lift a car later. The correct engineering approach is to use the best tool for the job at hand. For N=15, the best tool is the Held-Karp algorithm. If the requirements explicitly change, then the solution can be re-evaluated.
+
+2.  **On Flexibility:** Agent B correctly notes that adding constraints is easier with heuristics. However, the problem is defined as a pure TSP, not a Vehicle Routing Problem (VRP) or TSP with Time Windows (TSPTW). My solution perfectly and optimally solves the problem as stated. Agent B's solution prepares for a more complex problem that we were not asked to solve, sacrificing guaranteed optimality for the actual problem in the process.
+
+3.  **On Robustness:** The 'anytime' nature of a heuristic is entirely irrelevant when the exact, optimal solution can be computed in milliseconds. There is no practical scenario where a 10ms 'good enough' answer is preferable to a 100ms 'perfect' answer. Agent B's claim that a simple heuristic is 'extremely likely' to find the optimum for N=15 is an admission of weakness. 'Extremely likely' is not a guarantee. My approach provides that guarantee for a negligible computational cost, making it the more professional and reliable choice.
+
+Agent B's critique of A:
+Agent A presents a compelling case for the Held-Karp algorithm, but its perspective is fundamentally myopic. The argument correctly establishes that for a *pure, static TSP with N=15*, an exact solution is computationally trivial and guarantees optimality. This point is well-taken. However, this narrow focus completely ignores the strategic context of building a real-world system. My argument's core tenets—scalability and flexibility—are not about solving this single instance, but about architectural foresight. Agent A's solution is a dead end; it is brittle. If the problem scales to N=25 or incorporates a single real-world constraint like a time window, their entire algorithm becomes useless and requires a complete, and often much more complex, redesign. My heuristic approach establishes a robust framework that gracefully handles such inevitable evolution. Agent A's rebuttal that 'good enough' is an 'unprofessional compromise' is ironic, as delivering a non-scalable, inflexible solution that will break on the first change request is a far greater professional failing.
+
+Final confidence scores:
+- Agent A: 1.0 (higher means Agent A (definite) is more certain)
+- Agent B: 0.92 (higher means Agent B (heuristic) is more certain)
+
+Persuasion scores:
+- A convinced by B: 0.65 (higher means Agent A (definite) is more convinced by Agent B (heuristic))
+- B convinced by A: 0.75 (higher means Agent B (heuristic) is more convinced by Agent A (definite))
+
+Evaluate the debate from both sides and determine:
+- Which algorithm type is more suitable: definite or heuristic?
+- Provide a rationale and explain your judgment with algorithmic insight if possible.
+- Recommend a final strategy, including algorithm type and possible method name.
+
+Return your response **strictly in JSON format** as shown below. Do not include any markdown code block or extra text.
+**You can only choose between "definite" or "heuristic" as the final strategy. No other options are allowed. No other text or commentary are allowed.**
+Example:
+{
+  "explanation": "Agent A presented a more structured approach with clear convergence guarantees, while Agent B raised valid concerns about scalability. However, B's argument lacked empirical backing...",
+  "final_strategy": "heuristic",
+}
+
+--------------------
+2025-07-18 15:24:40,767 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "The core of the debate is whether to solve the specific problem as stated or to build a more general, future-proof system. Agent A argues for solving the exact problem (N=15), while Agent B argues for a flexible framework that anticipates future changes. For a problem size of N=15, the computational cost of a definite (exact) algorithm like Held-Karp, with a complexity of O(n² * 2^n), is trivial and can be executed in milliseconds on modern hardware. Agent A is correct that using a heuristic in this scenario would be a form of premature optimization for a hypothetical future that may not occur. It sacrifices a guaranteed optimal solution for flexibility that is not required by the problem statement. The 'anytime' benefit of a heuristic is irrelevant when the exact, perfect answer can be found almost instantaneously. Therefore, Agent A's argument to use the best tool for the job at hand is the most logical and professionally sound approach. The persuasion scores also indicate that Agent B was more convinced by Agent A's reasoning for this specific instance, reinforcing this conclusion.",
+  "final_strategy": "definite"
+}
+```
+--------------------
+2025-07-18 15:24:40,767 - INFO - --- [Gemini API 回應] ---
+```json
+{
+  "explanation": "The core of the debate is whether to solve the specific problem as stated or to build a more general, future-proof system. Agent A argues for solving the exact problem (N=15), while Agent B argues for a flexible framework that anticipates future changes. For a problem size of N=15, the computational cost of a definite (exact) algorithm like Held-Karp, with a complexity of O(n² * 2^n), is trivial and can be executed in milliseconds on modern hardware. Agent A is correct that using a heuristic in this scenario would be a form of premature optimization for a hypothetical future that may not occur. It sacrifices a guaranteed optimal solution for flexibility that is not required by the problem statement. The 'anytime' benefit of a heuristic is irrelevant when the exact, perfect answer can be found almost instantaneously. Therefore, Agent A's argument to use the best tool for the job at hand is the most logical and professionally sound approach. The persuasion scores also indicate that Agent B was more convinced by Agent A's reasoning for this specific instance, reinforcing this conclusion.",
+  "final_strategy": "definite"
+}
+```
+--------------------
+2025-07-18 15:24:40,770 - INFO - --- [以上的LLM 回應] (耗時: 30.31 秒) -----------
+2025-07-18 15:24:40,770 - INFO - --- [以上的LLM 回應] (耗時: 30.31 秒) -----------
+2025-07-18 15:24:55,510 - INFO - --- [Gemini API 回應] ---
+Since the only text provided is the word "definite," here is a brief explanation of its meaning:
+
+The word "definite" describes something that is clearly stated, certain, or decided, leaving no room for doubt. It implies a final, fixed, or precise boundary or conclusion. For example, a "definite answer" is one that is unambiguous, and a "definite plan" is one that has been firmly established. Essentially, if something is definite, it is sure, settled, and not vague.
+
+If you have a longer text you would like shortened, please provide it and I'll be happy to help
+--------------------
+2025-07-18 15:24:55,510 - INFO - --- [Gemini API 回應] ---
+Since the only text provided is the word "definite," here is a brief explanation of its meaning:
+
+The word "definite" describes something that is clearly stated, certain, or decided, leaving no room for doubt. It implies a final, fixed, or precise boundary or conclusion. For example, a "definite answer" is one that is unambiguous, and a "definite plan" is one that has been firmly established. Essentially, if something is definite, it is sure, settled, and not vague.
+
+If you have a longer text you would like shortened, please provide it and I'll be happy to help
+--------------------
+2025-07-18 15:24:56,652 - INFO - 進度圖表已儲存至 debate_chart_20250718_152455.png
+2025-07-18 15:24:56,652 - INFO - 進度圖表已儲存至 debate_chart_20250718_152455.png
+2025-07-18 15:24:56,653 - INFO - 
+FINAL STRATEGY --- definite ---/n
+2025-07-18 15:24:56,653 - INFO - 
+FINAL STRATEGY --- definite ---/n
+2025-07-18 15:24:56,653 - INFO - 
+--- Iteration 5 : 開始優化 ---
+2025-07-18 15:24:56,653 - INFO - 
+--- Iteration 5 : 開始優化 ---
+2025-07-18 15:24:56,654 - INFO - 
+--- [Iteration 6 的完整 Prompt] ---
+
+You are an algorithmic optimization expert using a **definite strategy**.
+
+Your task is to offer and refine an  exact algorithm for the following problem:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+With the final strategy:
+definite and The core of the debate is whether to solve the specific problem as stated or to build a more general, future-proof system. Agent A argues for solving the exact problem (N=15), while Agent B argues for a flexible framework that anticipates future changes. For a problem size of N=15, the computational cost of a definite (exact) algorithm like Held-Karp, with a complexity of O(n² * 2^n), is trivial and can be executed in milliseconds on modern hardware. Agent A is correct that using a heuristic in this scenario would be a form of premature optimization for a hypothetical future that may not occur. It sacrifices a guaranteed optimal solution for flexibility that is not required by the problem statement. The 'anytime' benefit of a heuristic is irrelevant when the exact, perfect answer can be found almost instantaneously. Therefore, Agent A's argument to use the best tool for the job at hand is the most logical and professionally sound approach. The persuasion scores also indicate that Agent B was more convinced by Agent A's reasoning for this specific instance, reinforcing this conclusion..
+
+Then, implement the algorithm in Python code.
+
+You previously attempted this solution:
+```python
+this is the first prompt so it is blank. please give the first algorithm code and implement it
+````
+
+Result Score: this is the first prompt so it is blank. please give the first algorithm code and obtain the first score
+
+Your Responsibilities:
+
+* Review & Reflect: If it is the first iteration, please give the code and execute it. Is the algorithm optimal and final? If not, how can it be improved?
+* Enhance & Explain: Refactor or restructure it, improve clarity and efficiency (but preserve correctness).
+* Verify: Run the new version and compare it with the previous result. Is the result identical, or improved?
+
+You may stop refining if:
+
+* You believe this is the best possible solution.
+* You detect diminishing returns.
+**OUR GOAL IS TO FIND THE BEST SOLUTION, NOT JUST A METHOD WHICH IS NOT IMPLEMENTED YET.**
+Return your response in **pure JSON format**, with the following structure:
+
+{
+"explanation": "<Your brief critique and justification of the changes.>",
+"value": <Result score of the code given by the algorithm and code interpreter, as a float>,
+"is_finished": <true or false, depending on whether you consider further refinement unnecessary>
+}
+
+⚠️ Do not include markdown blocks, code blocks, or any commentary outside the JSON. Only return the JSON object.
+
+
+Remember to use the same initial data:
+data = [[0.77395605 0.43887844] [0.85859792 0.69736803] [0.09417735 0.97562235] [0.7611397  0.78606431] [0.12811363 0.45038594] [0.37079802 0.92676499] [0.64386512 0.82276161] [0.4434142  0.22723872] [0.55458479 0.06381726] [0.82763117 0.6316644 ] [0.75808774 0.35452597] [0.97069802 0.89312112] [0.7783835  0.19463871] [0.466721   0.04380377] [0.15428949 0.68304895]] Your goal is to generate optimal code use given information and use code interpreter to run the code
+--------------------
+2025-07-18 15:24:56,654 - INFO - 
+--- [Iteration 6 的完整 Prompt] ---
+
+You are an algorithmic optimization expert using a **definite strategy**.
+
+Your task is to offer and refine an  exact algorithm for the following problem:
+
+Solve the Traveling Salesman Problem (TSP) for a given set of 2D points. 
+        There are 15 points. Time complexity is quite important so you ought to consider that. :)
+        
+
+With the final strategy:
+definite and The core of the debate is whether to solve the specific problem as stated or to build a more general, future-proof system. Agent A argues for solving the exact problem (N=15), while Agent B argues for a flexible framework that anticipates future changes. For a problem size of N=15, the computational cost of a definite (exact) algorithm like Held-Karp, with a complexity of O(n² * 2^n), is trivial and can be executed in milliseconds on modern hardware. Agent A is correct that using a heuristic in this scenario would be a form of premature optimization for a hypothetical future that may not occur. It sacrifices a guaranteed optimal solution for flexibility that is not required by the problem statement. The 'anytime' benefit of a heuristic is irrelevant when the exact, perfect answer can be found almost instantaneously. Therefore, Agent A's argument to use the best tool for the job at hand is the most logical and professionally sound approach. The persuasion scores also indicate that Agent B was more convinced by Agent A's reasoning for this specific instance, reinforcing this conclusion..
+
+Then, implement the algorithm in Python code.
+
+You previously attempted this solution:
+```python
+this is the first prompt so it is blank. please give the first algorithm code and implement it
+````
+
+Result Score: this is the first prompt so it is blank. please give the first algorithm code and obtain the first score
+
+Your Responsibilities:
+
+* Review & Reflect: If it is the first iteration, please give the code and execute it. Is the algorithm optimal and final? If not, how can it be improved?
+* Enhance & Explain: Refactor or restructure it, improve clarity and efficiency (but preserve correctness).
+* Verify: Run the new version and compare it with the previous result. Is the result identical, or improved?
+
+You may stop refining if:
+
+* You believe this is the best possible solution.
+* You detect diminishing returns.
+**OUR GOAL IS TO FIND THE BEST SOLUTION, NOT JUST A METHOD WHICH IS NOT IMPLEMENTED YET.**
+Return your response in **pure JSON format**, with the following structure:
+
+{
+"explanation": "<Your brief critique and justification of the changes.>",
+"value": <Result score of the code given by the algorithm and code interpreter, as a float>,
+"is_finished": <true or false, depending on whether you consider further refinement unnecessary>
+}
+
+⚠️ Do not include markdown blocks, code blocks, or any commentary outside the JSON. Only return the JSON object.
+
+
+Remember to use the same initial data:
+data = [[0.77395605 0.43887844] [0.85859792 0.69736803] [0.09417735 0.97562235] [0.7611397  0.78606431] [0.12811363 0.45038594] [0.37079802 0.92676499] [0.64386512 0.82276161] [0.4434142  0.22723872] [0.55458479 0.06381726] [0.82763117 0.6316644 ] [0.75808774 0.35452597] [0.97069802 0.89312112] [0.7783835  0.19463871] [0.466721   0.04380377] [0.15428949 0.68304895]] Your goal is to generate optimal code use given information and use code interpreter to run the code
+--------------------
+2025-07-18 15:25:49,171 - INFO - --- [Gemini API 回應] ---
+```json
+{
+"explanation": "This is the initial implementation based on the specified definite strategy. It uses the Held-Karp algorithm, an exact dynamic programming approach with a time complexity of O(n² * 2^n). This complexity is perfectly acceptable for the given problem size of N=15, guaranteeing an optimal solution without the need for heuristics. The code first computes a distance matrix for all pairs of points and then applies the DP with bitmasking to find the shortest possible tour length. The result is the exact minimum distance for the TSP tour. Given that this algorithm is standard, exact, and performs efficiently for N=15 as per the user-provided strategy, it represents the best possible solution. Further refinement would likely involve switching to a heuristic, which contradicts the problem's core directive.",
+"value": 3.1299880922318644,
+"is_finished": true
+}
+```
+--------------------
+2025-07-18 15:25:49,171 - INFO - --- [Gemini API 回應] ---
+```json
+{
+"explanation": "This is the initial implementation based on the specified definite strategy. It uses the Held-Karp algorithm, an exact dynamic programming approach with a time complexity of O(n² * 2^n). This complexity is perfectly acceptable for the given problem size of N=15, guaranteeing an optimal solution without the need for heuristics. The code first computes a distance matrix for all pairs of points and then applies the DP with bitmasking to find the shortest possible tour length. The result is the exact minimum distance for the TSP tour. Given that this algorithm is standard, exact, and performs efficiently for N=15 as per the user-provided strategy, it represents the best possible solution. Further refinement would likely involve switching to a heuristic, which contradicts the problem's core directive.",
+"value": 3.1299880922318644,
+"is_finished": true
+}
+```
+--------------------
+2025-07-18 15:25:49,171 - INFO - --- [Iteration 5 的推理結果] ---
+This is the initial implementation based on the specified definite strategy. It uses the Held-Karp algorithm, an exact dynamic programming approach with a time complexity of O(n² * 2^n). This complexity is perfectly acceptable for the given problem size of N=15, guaranteeing an optimal solution without the need for heuristics. The code first computes a distance matrix for all pairs of points and then applies the DP with bitmasking to find the shortest possible tour length. The result is the exact minimum distance for the TSP tour. Given that this algorithm is standard, exact, and performs efficiently for N=15 as per the user-provided strategy, it represents the best possible solution. Further refinement would likely involve switching to a heuristic, which contradicts the problem's core directive.
+--------------------
+2025-07-18 15:25:49,171 - INFO - --- [Iteration 5 的推理結果] ---
+This is the initial implementation based on the specified definite strategy. It uses the Held-Karp algorithm, an exact dynamic programming approach with a time complexity of O(n² * 2^n). This complexity is perfectly acceptable for the given problem size of N=15, guaranteeing an optimal solution without the need for heuristics. The code first computes a distance matrix for all pairs of points and then applies the DP with bitmasking to find the shortest possible tour length. The result is the exact minimum distance for the TSP tour. Given that this algorithm is standard, exact, and performs efficiently for N=15 as per the user-provided strategy, it represents the best possible solution. Further refinement would likely involve switching to a heuristic, which contradicts the problem's core directive.
+--------------------
+2025-07-18 15:25:49,173 - INFO - Iteration 5 完成。分數: 3.1299880922318644 (歷史最佳: inf)
+2025-07-18 15:25:49,173 - INFO - Iteration 5 完成。分數: 3.1299880922318644 (歷史最佳: inf)
+2025-07-18 15:25:49,174 - INFO - 
+--- [啟動 Evaluator] 正在評估推理品質 ---
+2025-07-18 15:25:49,174 - INFO - 
+--- [啟動 Evaluator] 正在評估推理品質 ---
+2025-07-18 15:26:11,387 - INFO - 評估完成。總分: 100/100 (耗時: 20.21 秒)
+2025-07-18 15:26:11,387 - INFO - 評估完成。總分: 100/100 (耗時: 20.21 秒)
+2025-07-18 15:26:11,389 - INFO - 詳細評分: {
+  "problem_understanding": 20,
+  "strategic_planning": 20,
+  "self_correction": 20,
+  "clarity": 20,
+  "implementation_quality": 20
+}
+2025-07-18 15:26:11,389 - INFO - 詳細評分: {
+  "problem_understanding": 20,
+  "strategic_planning": 20,
+  "self_correction": 20,
+  "clarity": 20,
+  "implementation_quality": 20
+}
+2025-07-18 15:26:11,390 - INFO - *** 新的最佳解! ***
+2025-07-18 15:26:11,390 - INFO - *** 新的最佳解! ***
+2025-07-18 15:26:11,391 - INFO - 
+模型回傳 'FINISHED'，結束優化流程。
+2025-07-18 15:26:11,391 - INFO - 
+模型回傳 'FINISHED'，結束優化流程。
+2025-07-18 15:26:11,392 - INFO - 
+
+==================== 優化流程結束 ====================
+2025-07-18 15:26:11,392 - INFO - 
+
+==================== 優化流程結束 ====================
+2025-07-18 15:26:11,392 - INFO - 總執行時間: 74.74 秒
+2025-07-18 15:26:11,392 - INFO - 總執行時間: 74.74 秒
+2025-07-18 15:26:11,393 - INFO - 總共執行了 1 次有效的迭代。
+2025-07-18 15:26:11,393 - INFO - 總共執行了 1 次有效的迭代。
+2025-07-18 15:26:11,394 - INFO - 找到的最佳分數為: 3.1299880922318644
+2025-07-18 15:26:11,394 - INFO - 找到的最佳分數為: 3.1299880922318644
+2025-07-18 15:26:11,395 - INFO - 
+--- [最佳解的詳細資訊] ---
+Iteration 5: Score=3.1299880922318644, Code:
+import numpy as np
+import itertools
+
+# The provided data points
+data = np.array([
+    [0.77395605, 0.43887844], [0.85859792, 0.69736803], [0.09417735, 0.97562235],
+    [0.7611397,  0.78606431], [0.12811363, 0.45038594], [0.37079802, 0.92676499],
+    [0.64386512, 0.82276161], [0.4434142,  0.22723872], [0.55458479, 0.06381726],
+    [0.82763117, 0.6316644 ], [0.75808774, 0.35452597], [0.97069802, 0.89312112],
+    [0.7783835,  0.19463871], [0.466721,   0.04380377], [0.15428949, 0.68304895]
+])
+
+def calculate_distances(points):
+    """Calculates the distance matrix for a given set of points."""
+    n = len(points)
+    dist_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            dist = np.linalg.norm(points[i] - points[j])
+            dist_matrix[i, j] = dist
+            dist_matrix[j, i] = dist
+    return dist_matrix
+
+def held_karp(dist_matrix):
+    """
+    Solves TSP using the Held-Karp algorithm with dynamic programming and bitmasking.
+    """
+    n = len(dist_matrix)
+    # memo[(bitmask, last_city)] = cost
+    memo = {}
+
+    # Base case: distance from start_node (0) to any other city
+    for i in range(1, n):
+        # The bitmask represents the set {0, i}
+        mask = (1 << 0) | (1 << i)
+        memo[(mask, i)] = dist_matrix[0, i]
+
+    # Iterate over subset sizes from 3 to n
+    for subset_size in range(3, n + 1):
+        # Generate all subsets of the given size that include the start node (0)
+        for subset_indices in itertools.combinations(range(1, n), subset_size - 1):
+            subset_mask = (1 << 0)
+            for i in subset_indices:
+                subset_mask |= (1 << i)
+
+            # For each city j in the current subset (excluding the start node)
+            for j in subset_indices:
+                prev_mask = subset_mask & ~(1 << j)
+                min_cost = float('inf')
+
+                # k is the city visited before j
+                for k in subset_indices:
+                    if k == j:
+                        continue
+                    
+                    cost = memo.get((prev_mask, k))
+                    if cost is not None:
+                        total_cost = cost + dist_matrix[k, j]
+                        if total_cost < min_cost:
+                            min_cost = total_cost
+                
+                if min_cost != float('inf'):
+                    memo[(subset_mask, j)] = min_cost
+
+    # Final step: complete the tour by returning to the start node
+    final_mask = (1 << n) - 1
+    min_tour_length = float('inf')
+
+    for i in range(1, n):
+        cost = memo.get((final_mask, i))
+        if cost is not None:
+            tour_length = cost + dist_matrix[i, 0]
+            if tour_length < min_tour_length:
+                min_tour_length = tour_length
+
+    return min_tour_length
+
+# Calculate the distance matrix
+distances = calculate_distances(data)
+
+# Solve the TSP
+optimal_distance = held_karp(distances)
+
+print(f"{optimal_distance=}")
+
+2025-07-18 15:26:11,395 - INFO - 
+--- [最佳解的詳細資訊] ---
+Iteration 5: Score=3.1299880922318644, Code:
+import numpy as np
+import itertools
+
+# The provided data points
+data = np.array([
+    [0.77395605, 0.43887844], [0.85859792, 0.69736803], [0.09417735, 0.97562235],
+    [0.7611397,  0.78606431], [0.12811363, 0.45038594], [0.37079802, 0.92676499],
+    [0.64386512, 0.82276161], [0.4434142,  0.22723872], [0.55458479, 0.06381726],
+    [0.82763117, 0.6316644 ], [0.75808774, 0.35452597], [0.97069802, 0.89312112],
+    [0.7783835,  0.19463871], [0.466721,   0.04380377], [0.15428949, 0.68304895]
+])
+
+def calculate_distances(points):
+    """Calculates the distance matrix for a given set of points."""
+    n = len(points)
+    dist_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            dist = np.linalg.norm(points[i] - points[j])
+            dist_matrix[i, j] = dist
+            dist_matrix[j, i] = dist
+    return dist_matrix
+
+def held_karp(dist_matrix):
+    """
+    Solves TSP using the Held-Karp algorithm with dynamic programming and bitmasking.
+    """
+    n = len(dist_matrix)
+    # memo[(bitmask, last_city)] = cost
+    memo = {}
+
+    # Base case: distance from start_node (0) to any other city
+    for i in range(1, n):
+        # The bitmask represents the set {0, i}
+        mask = (1 << 0) | (1 << i)
+        memo[(mask, i)] = dist_matrix[0, i]
+
+    # Iterate over subset sizes from 3 to n
+    for subset_size in range(3, n + 1):
+        # Generate all subsets of the given size that include the start node (0)
+        for subset_indices in itertools.combinations(range(1, n), subset_size - 1):
+            subset_mask = (1 << 0)
+            for i in subset_indices:
+                subset_mask |= (1 << i)
+
+            # For each city j in the current subset (excluding the start node)
+            for j in subset_indices:
+                prev_mask = subset_mask & ~(1 << j)
+                min_cost = float('inf')
+
+                # k is the city visited before j
+                for k in subset_indices:
+                    if k == j:
+                        continue
+                    
+                    cost = memo.get((prev_mask, k))
+                    if cost is not None:
+                        total_cost = cost + dist_matrix[k, j]
+                        if total_cost < min_cost:
+                            min_cost = total_cost
+                
+                if min_cost != float('inf'):
+                    memo[(subset_mask, j)] = min_cost
+
+    # Final step: complete the tour by returning to the start node
+    final_mask = (1 << n) - 1
+    min_tour_length = float('inf')
+
+    for i in range(1, n):
+        cost = memo.get((final_mask, i))
+        if cost is not None:
+            tour_length = cost + dist_matrix[i, 0]
+            if tour_length < min_tour_length:
+                min_tour_length = tour_length
+
+    return min_tour_length
+
+# Calculate the distance matrix
+distances = calculate_distances(data)
+
+# Solve the TSP
+optimal_distance = held_karp(distances)
+
+print(f"{optimal_distance=}")
+
+2025-07-18 15:26:11,402 - INFO - 
+---------------------
+
+2025-07-18 15:26:11,402 - INFO - 
+---------------------
+
+2025-07-18 15:26:11,403 - INFO - 額外加碼:與最佳解之間的距離
+2025-07-18 15:26:11,403 - INFO - 額外加碼:與最佳解之間的距離
+2025-07-18 15:26:12,147 - INFO - DP執行時間: 0.74 秒
+2025-07-18 15:26:12,147 - INFO - DP執行時間: 0.74 秒
+2025-07-18 15:26:12,147 - INFO - 數值分數記錄: 1 次
+2025-07-18 15:26:12,147 - INFO - 數值分數記錄: 1 次
+2025-07-18 15:26:12,148 - INFO - 推理品質評估: 1 次
+2025-07-18 15:26:12,148 - INFO - 推理品質評估: 1 次
+2025-07-18 15:26:12,192 - ERROR - An error occurred in the background task: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "C:\Users\vincent_ko\Desktop\module8-debate\app.py", line 287, in long_running_task
+    framework.run(
+    ~~~~~~~~~~~~~^
+        task_description=task_description,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        model_name=model_name,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vincent_ko\Desktop\module8-debate\main.py", line 1007, in run
+    self._plot_progress()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\vincent_ko\Desktop\module8-debate\main.py", line 781, in _plot_progress
+    ax2.plot(reasoning_iterations, self.reasoning_scores, 's--', color=color, label='Reasoning Score')
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_axes.py", line 1777, in plot
+    lines = [*self._get_lines(self, *args, data=data, **kwargs)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_base.py", line 297, in __call__
+    yield from self._plot_args(
+               ~~~~~~~~~~~~~~~^
+        axes, this, kwargs, ambiguous_fmt_datakey=ambiguous_fmt_datakey,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        return_kwargs=return_kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_base.py", line 491, in _plot_args
+    axes.yaxis.update_units(y)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axis.py", line 1754, in update_units
+    default = self._converter.default_units(data, self)
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 106, in default_units
+    axis.set_units(UnitData(data))
+                   ~~~~~~~~^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 182, in __init__
+    self.update(data)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 215, in update
+    for val in OrderedDict.fromkeys(data):
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^
+TypeError: unhashable type: 'dict'
+
+2025-07-18 15:26:12,192 - ERROR - An error occurred in the background task: unhashable type: 'dict'
+Traceback (most recent call last):
+  File "C:\Users\vincent_ko\Desktop\module8-debate\app.py", line 287, in long_running_task
+    framework.run(
+    ~~~~~~~~~~~~~^
+        task_description=task_description,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        model_name=model_name,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vincent_ko\Desktop\module8-debate\main.py", line 1007, in run
+    self._plot_progress()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\vincent_ko\Desktop\module8-debate\main.py", line 781, in _plot_progress
+    ax2.plot(reasoning_iterations, self.reasoning_scores, 's--', color=color, label='Reasoning Score')
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_axes.py", line 1777, in plot
+    lines = [*self._get_lines(self, *args, data=data, **kwargs)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_base.py", line 297, in __call__
+    yield from self._plot_args(
+               ~~~~~~~~~~~~~~~^
+        axes, this, kwargs, ambiguous_fmt_datakey=ambiguous_fmt_datakey,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        return_kwargs=return_kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axes\_base.py", line 491, in _plot_args
+    axes.yaxis.update_units(y)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\axis.py", line 1754, in update_units
+    default = self._converter.default_units(data, self)
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 106, in default_units
+    axis.set_units(UnitData(data))
+                   ~~~~~~~~^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 182, in __init__
+    self.update(data)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\vincent_ko\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\category.py", line 215, in update
+    for val in OrderedDict.fromkeys(data):
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^
+TypeError: unhashable type: 'dict'
+
+2025-07-18 15:26:12,643 - INFO - Found debate plot file: debate_chart_20250718_152455.png
+2025-07-18 15:26:12,643 - INFO - Found debate plot file: debate_chart_20250718_152455.png

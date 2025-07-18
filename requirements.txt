@@ -3,8 +3,5 @@ google-generativeai
 numpy
 python-dotenv
 matplotlib
-logging
-glob
-datetime
-json
+pipdeptree
 openai

@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 import logging
 import datetime
 import time
-import pulp
 import traceback
 from dp_for_tsp import DP4TSP
 import openai
@@ -35,11 +34,11 @@ Given the following task:
 Argue why a **definite algorithm** is more suitable for this task. Explain the benefits, provide potential algorithmic outlines, and prepare a rebuttal for typical heuristic claims.
 
 Return your response in **pure JSON format**, with the following structure, and nothing else:
-higher confidence means you are more certain about your argument
-{{
+
+{
   "explanation": "<your explanation here>",
-  "confidence": <your confidence score as a float between 0 and 1>, 
-}}
+  "confidence": <your confidence score as a float between 0 and 1>
+}
 
 Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
 """
@@ -54,103 +53,72 @@ Given the following task:
 Argue why a **heuristic algorithm** is more suitable for this task. Highlight scalability, flexibility, and robustness. Prepare to counter common critiques from the definite algorithm camp.
 
 Return your response in **pure JSON format**, with the following structure, and nothing else:
-higher confidence means you are more certain about your argument
-{{
+
+{
   "explanation": "<your explanation here>",
-  "confidence": <your confidence score as a float between 0 and 1>, 
-}}
+  "confidence": <your confidence score as a float between 0 and 1>
+}
 
 Do not include any markdown formatting, headings, or extra commentary. Only return the JSON object.
 
 """
 
-CRITIQUE_PROMPT_A= """
-You are Agent A. You have made the following argument:
+CRITIQUE_PROMPT = """
+You are AgentA. You have made the following argument:
 {self_argument}
-
-And here is the confidence of your argument:
+and here is the confidence of your argument:
 {confidence}
-
-Here is the argument made by Agent B:
+Here is the argument made by AgentB:
 {opponent_argument}
-
-Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent B's points are.
-
-Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
-The higher the persuasion score, the more convincing Agent B's points are.
-Example:
-{{
-  "critique": "While Agent B makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
-  "updated_confidence": 0.85,
-  "persuasion_score": 0.35
-}}
+Critique it from your definite algorithm perspective.
+Assess if your confidence remains the same, increases, or decreases.
+Also, give a persuasion score (0 to 1) on how convincing AgentB's points are.
+AT THE BOTTOM OF THE text, format your response as:
+Output:
+- Your critique
+- Updated Confidence: [0~1]
+- Persuasion Score: [0~1]
 """
-
-CRITIQUE_PROMPT_B= """
-You are Agent B. You have made the following argument:
-{self_argument}
-
-And here is the confidence of your argument:
-{confidence}
-
-Here is the argument made by Agent A:
-{opponent_argument}
-
-Critique it from your definite algorithm perspective. Assess whether your confidence remains the same, increases, or decreases. Also, give a **persuasion score** (0 to 1) representing how convincing Agent A's points are.
-
-Return your response **strictly in JSON format** like the example below. Do not include any other text or formatting. No markdown blocks, no headings.
-The higher the persuasion score, the more convincing Agent A's points are.
-Example:
-{{
-  "critique": "While Agent A makes a valid point about scalability, their argument lacks clarity on convergence guarantees...",
-  "updated_confidence": 0.85,
-  "persuasion_score": 0.35
-}}
-"""
-
 
 ARBITER_PROMPT_TEMPLATE = """
 You are an impartial judge reviewing a debate between two algorithm experts regarding the best strategy for solving the following task:
-
 {task_description}
 
-Agent A's critique of B:
+Agent A Critique of B:
 {agent_a_critique}
 
-Agent B's critique of A:
+Agent B Critique of A:
 {agent_b_critique}
 
 Final confidence scores:
-- Agent A: {agent_a_confidence} (higher means Agent A (definite) is more certain)
-- Agent B: {agent_b_confidence} (higher means Agent B (heuristic) is more certain)
+- Agent A: {agent_a_confidence} (How confident Agent A is in their argument)
+- Agent B: {agent_b_confidence} (How confident Agent B is in their argument)
 
 Persuasion scores:
-- A convinced by B: {agent_a_persuasion} (higher means Agent A (definite) is more convinced by Agent B (heuristic))
-- B convinced by A: {agent_b_persuasion} (higher means Agent B (heuristic) is more convinced by Agent A (definite))
+- A convinced by B: {agent_a_persuasion} (How much Agent A is convinced by Agent B's argument)
+- B convinced by A: {agent_b_persuasion} (How much Agent B is convinced by Agent A's argument)
 
-Evaluate the debate from both sides and determine:
-- Which algorithm type is more suitable: definite or heuristic?
-- Provide a rationale and explain your judgment with algorithmic insight if possible.
-- Recommend a final strategy, including algorithm type and possible method name.
+Decide whether the task should be solved using a:
+- definite algorithm (output: "definite")
+- heuristic algorithm (output: "heuristic")
 
-Return your response **strictly in JSON format** as shown below. Do not include any markdown code block or extra text.
-**You can only choose between "definite" or "heuristic" as the final strategy. No other options are allowed. No other text or commentary are allowed.**
-Example:
-{{
-  "explanation": "Agent A presented a more structured approach with clear convergence guarantees, while Agent B raised valid concerns about scalability. However, B's argument lacked empirical backing...",
-  "final_strategy": "heuristic",
-}}
+Explain your choice and try to provide a rationale for your decision.
+Then, give a final strategy based on the arguments presented. Optimal and Specific algorithm or method can be mentioned.
+AT THE BOTTOM OF THE text, format your response as:
+FINAL STRATEGY SHOULD BE AT the BOTTOM OF THE text.
+Output:
+- Your Explanation and Rationale, with algorithmic details if applicable.
+- Final Strategy: [definite|heuristic]
 """
-
+#- hybrid or uncertain approach (output: "hybrid")
+# Agent B (Heuristic) says:
+# {agent_b_argument}
+# 刪除A跟B本來的立場
 STEP_ITERATIVE_PROMPT_DEFINITE = """
 You are an algorithmic optimization expert using a **definite strategy**.
 
-Your task is to offer and refine an  exact algorithm for the following problem:
-
+Your task is to **refine and finalize** an existing exact algorithm for the following problem:
 {task_description}
-
-Now here is the last three trial of the previous iteration:
-{history_log}
 
 With the final strategy:
 {final_strategy} and {final_explanation}.
@@ -160,72 +128,92 @@ Then, implement the algorithm in Python code.
 You previously attempted this solution:
 ```python
 {prev_code}
-````
-
+```
+It produced:
+```python
+{prev_result}
+```
 Result Score: {prev_score}
-
 Your Responsibilities:
 
-* Review & Reflect: If it is the first iteration, please give the code and execute it. Is the algorithm optimal and final? If not, how can it be improved?
-* Enhance & Explain: Refactor or restructure it, improve clarity and efficiency (but preserve correctness).
-* Verify: Run the new version and compare it with the previous result. Is the result identical, or improved?
+- Review & Reflect: Is the algorithm optimal and final? If not, how can it be improved?
+- Enhance & Explain: Refactor or restructure it, improve clarity and efficiency (but preserve correctness).
+- Verify: Run the new version and compare it with the previous result. Is the result identical, or improved?
 
 You may stop refining if:
+- You believe this is the best possible solution.
+- You detect diminishing returns.
+If you believe further significant improvement is unlikely, you can conclude your entire response with the single word "FINISHED".
+Keep your output quite brief, concise and insightful.
 
-* You believe this is the best possible solution.
-* You detect diminishing returns.
-**OUR GOAL IS TO FIND THE BEST SOLUTION, NOT JUST A METHOD WHICH IS NOT IMPLEMENTED YET.**
-Return your response in **pure JSON format**, with the following structure:
-
-{{
-"explanation": "<Your brief critique and justification of the changes.>",
-"value": <Result score of the code given by the algorithm and code interpreter, as a float>,
-"is_finished": <true or false, depending on whether you consider further refinement unnecessary>
-}}
-
-⚠️ Do not include markdown blocks, code blocks, or any commentary outside the JSON. Only return the JSON object.
+Please output the scores or inference results in the last line without any other values.
 """
-
-STEP_ITERATIVE_PROMPT_HEURISTIC = """
-You are optimizing a problem using a **heuristic strategy**. Your goal is offer and refine a heuristic solution for the following problem:
-
-The task is:
-{task_description}
-
-With the final strategy:
-{final_strategy} and {final_explanation}.
-
-You previously attempted this solution:
-```python
-{prev_code}
-```
-
-Result Score: {prev_score}
-
-Now please:
-
-* Critique the last approach and identify weaknesses.
-* Propose a concrete change (e.g. parameter tuning, switching to a different heuristic, using hybrid metaheuristics).
-* Implement the new code.
-* Run the solution and report the new result.
-**OUR GOAL IS TO FIND THE BEST SOLUTION, NOT JUST A METHOD WHICH IS NOT IMPLEMENTED YET.**
-* If the new result is better, explain why it is an improvement.
-If you believe further significant improvement is unlikely, you may end your response.
-
-Return your response in **pure JSON format**, like this:
-
-{{
-"explanation": "<Your reflection on the changes and why you made them.>",
-"value": <Result score of the code given by the algorithm and code interpreter, as a float>,
-"is_finished": <true if you consider this solution final, false otherwise>
-}}
-
-❌ Do not include markdown formatting, no extra text or description. Just return the JSON with determined values.
-"""
-
 # Here is the history of your previous attempts:
 # {history_log}
 #先不放
+STEP_ITERATIVE_PROMPT_HEURISTIC = """
+You are optimizing a problem using a **heuristic strategy**.
+
+The task is:
+{task_description}
+With the final strategy:
+{final_strategy} and {final_explanation}.
+
+Then, implement the algorithm in Python code.
+Your current best solution is:
+```python
+{prev_code}
+It produced:
+```python
+{prev_result}
+```
+Result Score: {prev_score}
+Now please:
+- Critique the last approach and identify weaknesses.
+- Propose a concrete change (e.g. parameter tuning, switching to a different heuristic, using hybrid metaheuristics).
+- Implement the new code.
+- Run the solution and report the new result.
+
+If you believe further significant improvement is unlikely, you can conclude your entire response with the single word "FINISHED".
+Keep your output quite brief, concise and insightful.
+
+Please output the scores or inference results in the last line without any other values.
+"""
+
+# STEP_ITERATIVE_PROMPT_HYBRID = """
+# You are solving a problem that requires a **hybrid approach**, combining both definite and heuristic methods.
+
+# The task is:
+# {task_description}
+# With the final strategy:
+# {final_strategy} and {final_explanation}.
+
+# Then, implement the algorithm in Python code.
+# Here is the history of your previous attempts:
+# {history_log}
+
+# Your current best solution is:
+# ```python
+# {prev_code}
+# It produced:
+# ```python
+# {prev_result}
+# ```
+# Result Score: {prev_score}
+# Now please:
+# - Analyze which component (definite or heuristic) can be improved further.
+
+# - Explain your plan (e.g., replace heuristic inner loop with DP refinement).
+
+# - Update the implementation and execute it.
+
+# - Report whether the result improves.
+
+# If you believe further significant improvement is unlikely, you can conclude your entire response with the single word "FINISHED".
+# Keep your output quite brief, concise and insightful.
+
+# Please output the scores or inference results in the last line without any other values.
+# """
 
 # 這是 LLM-as-a-Judge 的評分 Prompt
 EVALUATION_PROMPT_TEMPLATE = """
@@ -238,7 +226,7 @@ Please evaluate the following response based on five criteria. For each criterio
 ---
 {reasoning_text}
 ---
-"
+
 **Evaluation Criteria:**
 
 1.  **Problem Understanding & Analysis (0-20)**: How well did the model comprehend the problem's constraints, goals, and underlying computational complexity?
@@ -262,7 +250,7 @@ Please provide your evaluation in a JSON format like this:
         "problem_understanding": "...",
         "strategic_planning": "...",
         "self_correction": "...",
-        "clarity": "...",
+        "clarity": "..."
         "implementation_quality": "...",
     }},
     "total_score": 100
@@ -283,14 +271,13 @@ class SelfOptimizingFramework:
 
         # 初始化歷史紀錄
         self.history_log = []
-        self.numerical_scores = []
-        self.reasoning_scores = []
+        self.scores = []
+        self.reasoning_evals = []
         self.best_score = float('inf')
         self.best_solution_details = ""
         self.iteration_count = 0
         self.max_history = 0
         self.temperature = 0.7
-        self.inner_iteration_count = 0
         self.reasoning_times = []
         self.evaluation_times = []
         
@@ -396,7 +383,7 @@ class SelfOptimizingFramework:
                     time.sleep(2 + attempt * 2) # 指數後退
 
         self.logger.error(f"[錯誤] API 呼叫在 {max_retries} 次嘗試後徹底失敗。")
-        raise SystemError(f"無法呼叫 LLM API: {prompt} with model {model_name}")
+        return "ERROR: API call failed after multiple retries."
 
 
     def _run_agent(self, prompt_template: str, task_description: str, temp: float, model_name: str) -> dict:
@@ -408,32 +395,33 @@ class SelfOptimizingFramework:
 
             start_time = time.perf_counter()
             answer = self._call_llm_api(prompt, model_name, temp, False)
-            duration = time.perf_counter() - start_time
-
             if model_name.startswith("gemini"):
                 answer = answer.text
             elif model_name.startswith("gpt"):
                 answer = answer.choices[0].message.content or "ERROR: Empty response from GPT."
-            elif answer.startswith("ERROR:"):
+            if answer.startswith("ERROR:"):
+                self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {time.perf_counter() - start_time:.2f} 秒) ----")
+                return {"argument": answer, "confidence": 0.0}
+            duration = time.perf_counter() - start_time
+
+            if answer.startswith("ERROR:"):
                 self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {duration:.2f} 秒) ----")
                 return {"argument": answer, "confidence": 0.0}
 
             self.logger.info(f"\n--- [以上的LLM 回應] (耗時: {duration:.2f} 秒) ----\n")
-            answer = re.search(r'\{.*\}', answer, re.DOTALL).group(0)  if re.search(r'\{.*\}', answer, re.DOTALL) else answer
+            
             try:
-                data = json.loads(answer)
-                explanation = data.get("explanation", "").strip()
-                confidence = float(data.get("confidence", 0.0))
-                return {"argument": explanation, "confidence": confidence}
-            except (IndexError, TypeError, ValueError) as e:
-                self.logger.error(f"JSON 解析失敗，回傳原始內容：{e}")
+                confidence = self.__find_confidence_score(answer)
+                return {"argument": answer, "confidence": confidence}
+            except (ValueError, IndexError) as e:
+                self.logger.error(f"解析 'Confidence' 失敗: {e}")
                 return {"argument": answer, "confidence": 0.0}
+
 
     def _run_critique(self, prompt_template: str, agent_self, agent_opponent, temp: float, model_name: str) -> dict:
         """產生批判性分析並更新信心度"""
         self.iteration_count += 1
         self.logger.info(f"\n--- Iteration {self.iteration_count} : 進行批判性分析 ---")
-
         prompt = prompt_template.format(
             self_argument=agent_self["argument"],
             opponent_argument=agent_opponent["argument"],
@@ -443,52 +431,99 @@ class SelfOptimizingFramework:
 
         start_time = time.perf_counter()
         answer = self._call_llm_api(prompt, model_name, temp, False)
-        duration = time.perf_counter() - start_time
-
         if model_name.startswith("gemini"):
             answer = answer.text
         elif model_name.startswith("gpt"):
             answer = answer.choices[0].message.content or "ERROR: Empty response from GPT."
+        if answer.startswith("ERROR:"):
+            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {time.perf_counter() - start_time:.2f} 秒) ----")
+            return {"argument": answer, "confidence": 0.0}
+        duration = time.perf_counter() - start_time
 
         if answer.startswith("ERROR:"):
-            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {duration:.2f} 秒) ----")
-            return {
-                "argument": answer,
-                "confidence": agent_self.get("confidence", 0.0),
-                "persuasion": 0.0
-            }
+            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {duration:.2f} 秒) ----------")
+            return {"argument": answer, "confidence": agent_self.get("confidence", 0.0), "persuasion": 0.0}
 
         self.logger.info(f"--- [以上的LLM 回應] (耗時: {duration:.2f} 秒) ----------")
 
-        # 嘗試提取 JSON 區塊
-        match = re.search(r'\{.*\}', answer, re.DOTALL)
-        if not match:
-            self.logger.error("無法在回應中找到 JSON 格式，回傳原始回應")
-            return {
-                "argument": answer,
-                "confidence": agent_self.get("confidence", 0.0),
-                "persuasion": 0.0
-            }
-
         try:
-            data = json.loads(match.group(0))
-            critique = data.get("critique", "").strip()
-            updated_conf = float(data.get("updated_confidence", agent_self.get("confidence", 0.0)))
-            persuasion = float(data.get("persuasion_score", 0.0))
+            
+            # 1. 初始化變數為預設值
+            updated_conf = None
+            persuasion = None
+            critique_lines = []
 
-            return {
-                "argument": critique,
-                "confidence": updated_conf,
-                "persuasion": persuasion
-            }
+            lines = answer.strip().splitlines()
 
-        except (IndexError, ValueError, TypeError) as e:
-            self.logger.error(f"解析 JSON 回應失敗: {e}")
-            return {
-                "argument": answer,
-                "confidence": agent_self.get("confidence", 0.0),
-                "persuasion": 0.0
-            }
+            # 2. 逐行檢查與處理
+            for line in lines:
+                # 檢查是否為 "Updated Confidence" 行
+                if "Updated Confidence" in line:
+                    try:
+                        # 使用 split(':', 1) 只切分第一個冒號，更安全
+                        # 再用 re.sub 清理出數字
+                        value_str = re.sub(r'[^\d.]', '', line.split(':', 1)[1])
+                        if value_str:  # 確保清理後不是空字串
+                            updated_conf = float(value_str)
+                    except (IndexError, ValueError):
+                        # 如果這行格式有誤 (如沒有冒號)，就忽略錯誤並繼續
+                        pass
+                        
+                # 檢查是否為 "Persuasion Score" 行
+                elif "Persuasion Score" in line:
+                    try:
+                        value_str = re.sub(r'[^\d.]', '', line.split(':', 1)[1])
+                        if value_str:
+                            persuasion = float(value_str)
+                    except (IndexError, ValueError):
+                        pass
+                        
+                # 如果都不是分數行，就當作是評論內容
+                else:
+                    critique_lines.append(line)
+
+            # 3. 組合評論文字
+            critique_text = "\n".join(critique_lines).strip()
+            return {"argument": critique_text, "confidence": updated_conf, "persuasion": persuasion}
+        except (ValueError, IndexError) as e:
+            self.logger.error(f"解析 'Critique' 結果失敗: {e}")
+            return {"argument": answer, "confidence": agent_self.get("confidence", 0.0), "persuasion": 0.0}
+    def __find_confidence_score(self, answer: str) -> float | None:
+        """
+        在整個 answer 字串中搜尋第一筆 Confidence 分數。
+        
+        這個函式會：
+        1. 逐行搜尋。
+        2. 使用不分大小寫的方式尋找關鍵字 'confidence'。
+        3. 清理整行文字，只留下數字和小數點。
+        4. 找到第一個有效的數字後就回傳結果。
+        5. 如果找不到，回傳 None。
+        """
+        # 1. 設定預設回傳值
+        confidence = None
+        
+        # 2. 取得所有文字行
+        lines = answer.strip().splitlines()
+        
+        # 3. 逐行遍歷
+        for line in lines:
+            # 4. 檢查該行是否包含關鍵字 (使用 .lower() 來忽略大小寫)
+            if 'confidence' in line.lower():
+                # 5. 清理整行文字，而不只是特定部分
+                numeric_string = re.sub(r'[^\d.]', '', line)
+                
+                # 6. 確保清理後有內容，避免對空字串做 float() 轉換
+                if numeric_string:
+                    try:
+                        # 7. 嘗試轉換成 float
+                        confidence = float(numeric_string)
+                        # 8. 成功找到第一個符合的目標，就停止迴圈
+                        break
+                    except ValueError:
+                        # 如果清理後字串仍無法轉成 float (例如 "1.2.3")，就忽略並繼續尋找下一行
+                        continue
+                        
+        return confidence
 
     def _parse_heuristic_byllm(self, response: str, model_name: str, temp: float) -> Dict[str, Any]:
         """
@@ -513,13 +548,10 @@ class SelfOptimizingFramework:
         else: # 包含了兩種情況：兩個都有，或兩個都沒有
             return "uncertained"
 
-
-
     def _rationalize_strategy(self, prompt_template: str, task_description: str, agent_a, agent_b, critique_a, critique_b, temp: float, model_name: str) -> dict:
         """整合資訊並產生最終策略"""
         self.iteration_count += 1
         self.logger.info(f"\n--- Iteration {self.iteration_count} : 產生最終策略 ---")
-
         prompt = prompt_template.format(
             task_description=task_description,
             agent_a_argument=agent_a["argument"],
@@ -528,51 +560,75 @@ class SelfOptimizingFramework:
             agent_b_critique=critique_b["argument"],
             agent_a_confidence=critique_a["confidence"],
             agent_b_confidence=critique_b["confidence"],
-            agent_a_persuasion=critique_a["persuasion"],
-            agent_b_persuasion=critique_b["persuasion"]
+            agent_a_persuasion=critique_a["persuasion"], # a evaluate b
+            agent_b_persuasion=critique_b["persuasion"] # b evaluate a
         )
-
         self.logger.info(f"--- [傳送的 Prompt] ---\n{prompt}\n--------------------")
 
         start_time = time.perf_counter()
         answer = self._call_llm_api(prompt, model_name, temp, False)
-        duration = time.perf_counter() - start_time
-
-        # 取出純文字內容
         if model_name.startswith("gemini"):
             answer = answer.text
         elif model_name.startswith("gpt"):
             answer = answer.choices[0].message.content or "ERROR: Empty response from GPT."
-
         if answer.startswith("ERROR:"):
-            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {duration:.2f} 秒) ----")
+            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {time.perf_counter() - start_time:.2f} 秒) ----")
+            return {"argument": answer, "confidence": 0.0}
+        duration = time.perf_counter() - start_time
+        
+        if answer.startswith("ERROR:"):
+            self.logger.error(f"--- [以上的LLM 回應失敗] (耗時: {duration:.2f} 秒) --------------")
             raise ValueError(f"無法解析最終策略：{answer}")
 
         self.logger.info(f"--- [以上的LLM 回應] (耗時: {duration:.2f} 秒) -----------")
-
-        # 嘗試從回應中擷取 JSON 區塊
-        match = re.search(r'\{.*\}', answer, re.DOTALL)
-        if not match:
-            self.logger.error("無法在回應中找到 JSON 格式，回傳原始內容")
-            raise ValueError(f"LLM 回傳內容非 JSON 格式：{answer}")
-
+        
         try:
-            data = json.loads(match.group(0))
-            strategy = data.get("final_strategy", "").strip().lower()
-            explanation = data.get("explanation", "").strip()
-
-            if strategy not in {"definite", "heuristic"}:
-                raise ValueError(f"策略值不合法：{strategy}")
-
-            return {
-                "strategy": strategy,
-                "explanation": explanation
-            }
-
-        except (IndexError, KeyError, ValueError) as e:
-            self.logger.error(f"解析策略 JSON 失敗: {e}")
+            strategy = self._parse_heuristic_byllm(answer, model_name, temp)
+            # 解析邏輯
+            return {"strategy": strategy, "explanation": answer}
+        except (ValueError, IndexError) as e:
+            self.logger.error(f"解析 'Strategy' 結果失敗: {e}")
             raise ValueError(f"無法解析最終策略：{answer}")
         
+    def _get_last_line(self, text: str) -> str:
+        """Helper function: gets the last non-empty line from a string."""
+        if not text:
+            return ""
+        lines = text.strip().split('\n')
+        # reversed() is more efficient than lines[::-1] for iterators
+        for line in reversed(lines):
+            if line.strip():
+                return line.strip()
+        return ""
+
+    def _find_score_in_text(self, text: str) -> Optional[float]:
+        """
+        Attempts to find a score in a block of text using two strategies.
+        1. Try to extract a float from the last line using regex.
+        2. If that fails, try finding any float-looking number in the line.
+        """
+        last_line = self._get_last_line(text)
+        if not last_line:
+            return None
+
+        # Strategy 1: Search for number using regex
+        match = re.search(r'[-+]?\d*\.\d+|\d+', last_line)
+        if match:
+            try:
+                return float(match.group(0))
+            except ValueError:
+                self.logger.warning(f"Matched string '{match.group(0)}' could not be converted to float.")
+        
+        # Strategy 2: Find all numbers and return last one
+        numbers = re.findall(r'[-+]?\d*\.\d+|\d+', last_line)
+        if numbers:
+            try:
+                return float(numbers[-1])
+            except ValueError:
+                self.logger.warning(f"Found numbers {numbers}, but could not convert the last one.")
+        
+        return None
+
 
     def _extract_parts_from_response(self, response) -> Dict[str, str]:
         """Extracts reasoning, code, and output from the raw response object."""
@@ -610,17 +666,20 @@ class SelfOptimizingFramework:
 
         # 1. Extract all text components into a simple dictionary.
         parts = self._extract_parts_from_response(response)
-        json_text = parts["reasoning"]
-        json_text = re.search(r'\{.*\}', json_text, re.DOTALL).group(0)  if re.search(r'\{.*\}', json_text, re.DOTALL) else json_text
-        try:
-            data = json.loads(json_text)
-            explanation = data.get("explanation", "").strip()
-            value = float(data.get("value", 0.0))
-            is_finished = data.get("is_finished", False)
-            return {"reasoning": explanation, "score": value, "is_finished": is_finished,"code": parts["code"],"output": parts["output"],}
-        except (IndexError, TypeError, ValueError) as e:
-            self.logger.error(f"JSON 解析失敗，回傳原始內容：{e}")
-            return {"reasoning": json_text, "score": 0.0, "is_finished": False,"code": parts["code"],"output": parts["output"],}
+        
+        # 2. Determine the score with a clear priority: check code output first, then reasoning.
+        # The complex nested logic is now handled by the helper function.
+        score = self._find_score_in_text(parts["output"])
+        if score is None:
+            score = self._find_score_in_text(parts["reasoning"])
+
+        # 3. Assemble the final result.
+        return {
+            "reasoning": parts["reasoning"],
+            "code": parts["code"],
+            "output": parts["output"],
+            "score": score
+        }
 
     def _extract_parts_from_gpt_response(self, response) -> Dict[str, str]:
         reasoning = []
@@ -647,24 +706,19 @@ class SelfOptimizingFramework:
 
     def _parse_gpt_response(self, response) -> Dict[str, Any]:
         parts = self._extract_parts_from_gpt_response(response)
-
-        json_text = parts["reasoning"]
-        json_text = re.search(r'\{.*\}', json_text, re.DOTALL).group(0)  if re.search(r'\{.*\}', json_text, re.DOTALL) else json_text
-        try:
-            data = json.loads(json_text)
-            explanation = data.get("explanation", "").strip()
-            value = float(data.get("value", 0.0))
-            is_finished = data.get("is_finished", False)
-            return {"reasoning": explanation, "score": value, "is_finished": is_finished,"code": parts["code"],"output": parts["output"],}
-        except (IndexError, TypeError, ValueError) as e:
-            self.logger.error(f"JSON 解析失敗，回傳原始內容：{e}")
-            return {"reasoning": json_text, "score": 0.0, "is_finished": False,"code": parts["code"],"output": parts["output"],}
-    
+        score = self._find_score_in_text(parts["output"]) or self._find_score_in_text(parts["reasoning"])
+        return {
+            "reasoning": parts["reasoning"],
+            "code": parts["code"],
+            "output": parts["output"],
+            "score": score
+        }
     def _evaluate_reasoning(self, reasoning_text: str, model_name:str, history_pairs:str,) -> dict:
         """使用 LLM-as-a-Judge 來評估推理品質"""
         self.logger.info("\n--- [啟動 Evaluator] 正在評估推理品質 ---")
         prompt = EVALUATION_PROMPT_TEMPLATE.format(reasoning_text=reasoning_text, history_pairs=history_pairs)
         try:
+            time.sleep(2)
             start_time = time.perf_counter()
             if str.upper(model_name[0:6]) == "GEMINI":
                 #使用gemini當作evaluator
@@ -731,30 +785,31 @@ class SelfOptimizingFramework:
                 )
                 answer = response.choices[0].message.content
             end_time = time.perf_counter()
-            if answer:
-                try:
-                    eval_result = json.loads(answer)
-                    self.logger.info(f"評估完成。總分: {eval_result.get('total_score')}/100")
-                    self.logger.info(f"詳細評分: {json.dumps(eval_result.get('scores'), indent=2)}")
-                    return {"eval_result": eval_result, "raw_answer": "", "duration": end_time - start_time}
-                except json.JSONDecodeError:
-                    self.logger.warning("❗️無法解析 LLM 回傳內容為 JSON 格式")
-                    return {"eval_result": "invalid_json", "raw_answer": answer, "duration": end_time - start_time}
+            duration = end_time - start_time
+            if answer is not None:
+                eval_result = json.loads(answer)
+                self.logger.info(f"評估完成。總分: {eval_result.get('total_score')}/100 (耗時: {duration:.2f} 秒)")
+                self.logger.info(f"詳細評分: {json.dumps(eval_result.get('scores'), indent=2)}")
+                return {"eval_result": eval_result, "duration": duration}
             else:
-                return {"eval_result": "empty_response","raw_answer": "", "duration": end_time - start_time}
-
+                return {"eval_result": "errpr", "duration": duration}
         except Exception as e:
             self.logger.error(f"評估推理時發生錯誤: {e}")
             return {"total_score": 0, "error": str(e)}
 
     def _plot_progress(self):
         """將數值分數和推理品質分數視覺化"""
-        if not self.numerical_scores:
+        if not self.scores or not self.reasoning_evals:
             self.logger.info("沒有足夠的數據來生成圖表。")
             return IndexError
-        # 驗證數據一致性 (這個case會一樣)
-        self.logger.info(f"數值分數記錄: {len(self.numerical_scores)} 次")
-        self.logger.info(f"推理品質評估: {len(self.reasoning_scores)} 次")
+
+        # 計算迭代次數並建立軸線
+        num_iterations = len(self.scores)
+        num_reasoning_evals = len(self.reasoning_evals)
+        
+        # 驗證數據一致性
+        self.logger.info(f"數值分數記錄: {num_iterations} 次")
+        self.logger.info(f"推理品質評估: {num_reasoning_evals} 次")
         
         # 建立 2x1 的子圖
         fig, (ax1, ax3) = plt.subplots(2, 1, figsize=(14, 12))
@@ -767,24 +822,29 @@ class SelfOptimizingFramework:
         color = 'tab:red'
         ax1.set_xlabel('迭代次數 (Iteration)')
         ax1.set_ylabel('問題解數值 (Numerical Score)', color=color)
-
-        numerical_iterations = range(1, len(self.numerical_scores) + 1)
-        ax1.plot(numerical_iterations, self.numerical_scores, 'o-', color=color, label='Numerical Score')
+        
+        # 數值分數從第2次迭代開始（因為第1次只有推理品質）
+        numerical_iterations = range(1, num_iterations + 1)  # 第2次到第(num_iterations+1)次
+        ax1.plot(numerical_iterations, self.scores, 'o-', color=color, label='Numerical Score')
         ax1.tick_params(axis='y', labelcolor=color)
         
-        min_score_idx = self.numerical_scores.index(self.best_score)
-        # 調整索引以對應正確的迭代次數
-        ax1.scatter(min_score_idx + 2, self.best_score, s=150, facecolors='none',
-                edgecolors='gold', linewidth=2, label=f'Best Score: {self.best_score:.2f}')
+        # 標示出最佳分數（最低分數）
+        if self.scores:
+            min_score_val = min(self.scores)
+            min_score_idx = self.scores.index(min_score_val)
+            # 調整索引以對應正確的迭代次數
+            ax1.scatter(min_score_idx + 2, min_score_val, s=150, facecolors='none', 
+                    edgecolors='gold', linewidth=2, label=f'Best Score: {min_score_val:.2f}')
 
         # 右側 Y 軸：推理品質分數 (越高越好)
         ax2 = ax1.twinx()
         color = 'tab:blue'
+        reasoning_scores = [e.get('total_score', 0) for e in self.reasoning_evals]
         ax2.set_ylabel('推理品質分數 (Reasoning Quality Score)', color=color)
         
         # 推理品質分數從第1次迭代開始
-        reasoning_iterations = range(1, len(self.reasoning_scores) + 1)
-        ax2.plot(reasoning_iterations, self.reasoning_scores, 's--', color=color, label='Reasoning Score')
+        reasoning_iterations = range(1, num_reasoning_evals + 1)
+        ax2.plot(reasoning_iterations, reasoning_scores, 's--', color=color, label='Reasoning Score')
         ax2.tick_params(axis='y', labelcolor=color)
         ax2.set_ylim(0, 110)  # 分數範圍 0-100，稍微放寬到 110 以便顯示
         
@@ -797,8 +857,8 @@ class SelfOptimizingFramework:
         ax1.grid(True)
         
         # 設定 X 軸刻度 - 涵蓋所有迭代次數
-        max_iterations = max(len(self.numerical_scores), len(self.reasoning_scores))
-        all_iterations = range(1, max_iterations + 1)
+        max_iterations = max(num_iterations, num_reasoning_evals)  # +1 因為數值分數從第2次開始
+        all_iterations = range(1, max_iterations)
         ax1.set_xticks(all_iterations)
         ax1.set_xlim(0.5, max_iterations + 0.5)  # 設定 X 軸範圍
 
@@ -838,6 +898,7 @@ class SelfOptimizingFramework:
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         self.logger.info(f"進度圖表已儲存至 {plot_filename}")
     def run(self, model_name:str,task_description: str, points: np.array, max_iterations: int = 6, no_improvement_threshold: int=2, max_history_length: int = 3,temp=0.4):
+        debate_start_time = time.perf_counter()
         # --- STEP 1: 推理分類與初步設計 ---
         initial_data = "data = " + str(points).replace('\n', '')
         self.iteration_count = 0
@@ -846,13 +907,13 @@ class SelfOptimizingFramework:
         self.logger.info(f"最大迭代次數: {max_iterations}, 無進步停止閾值: {no_improvement_threshold}")
         self.logger.info(f"使用的模型: {model_name}, 溫度: {temp}")        
         #使用llm進行推理
-        debate_start_time = time.perf_counter()
+
         response_agent_a=self._run_agent(prompt_template=AGENT_A_PROMPT_TEMPLATE, task_description=task_description, temp=temp, model_name=model_name)
         response_agent_b=self._run_agent(prompt_template=AGENT_B_PROMPT_TEMPLATE, task_description=task_description, temp=temp, model_name=model_name)
         self.plt_dict["Agent name"] = ["Definite Supporter", "Heuristic Supporter"]
         self.plt_dict["initial_confidence"] = [response_agent_a["confidence"], response_agent_b["confidence"]]
-        critique_a=self._run_critique(prompt_template=CRITIQUE_PROMPT_A, agent_self=response_agent_a, agent_opponent=response_agent_b, temp=temp, model_name=model_name)
-        critique_b=self._run_critique(prompt_template=CRITIQUE_PROMPT_B, agent_self=response_agent_b, agent_opponent=response_agent_a, temp=temp, model_name=model_name)
+        critique_a=self._run_critique(prompt_template=CRITIQUE_PROMPT, agent_self=response_agent_a, agent_opponent=response_agent_b, temp=temp, model_name=model_name)
+        critique_b=self._run_critique(prompt_template=CRITIQUE_PROMPT, agent_self=response_agent_b, agent_opponent=response_agent_a, temp=temp, model_name=model_name)
         self.plt_dict["adjusted_confidence"] = [critique_a["confidence"], critique_b["confidence"]]
         self.plt_dict["persuasion"] = [critique_a["persuasion"], critique_b["persuasion"]]
         debate_result = self._rationalize_strategy(prompt_template=ARBITER_PROMPT_TEMPLATE, task_description=task_description, agent_a=response_agent_a, agent_b=response_agent_b, critique_a=critique_a, critique_b=critique_b, temp=temp, model_name=model_name)
@@ -862,7 +923,9 @@ class SelfOptimizingFramework:
             shortened_strategy = shortened_strategy.text
         elif model_name.startswith("gpt"):
             shortened_strategy = shortened_strategy.choices[0].message.content or "ERROR: Empty response from GPT."
-        debate_end_time = time.perf_counter()
+        self.logger.info(self.plt_dict)
+        self.logger.info(type(self.plt_dict))
+
         df = pd.DataFrame(self.plt_dict)
 
         # Create a figures
@@ -895,134 +958,114 @@ class SelfOptimizingFramework:
         final_strategy = debate_result.get("strategy", "ERROR")
         final_explanation = debate_result.get("explanation", "No explanation provided.")
         
-        
+        debate_end_time = time.perf_counter()
         self.history_log.append({"iteration": 1, "type": "Analysis", "strategy": final_strategy, "explanation": final_explanation, "debate_time": debate_end_time - debate_start_time})
+        self.reasoning_times.append(debate_end_time- debate_start_time)
         # 根據分類選擇不同的 Prompt
         self.logger.info(f"\nFINAL STRATEGY --- {final_strategy} ---/n")
         if final_strategy == "definite":
             prompt_template = STEP_ITERATIVE_PROMPT_DEFINITE
+        # elif final_strategy == "hybrid":
+        #     prompt_template = STEP_ITERATIVE_PROMPT_HYBRID
         elif final_strategy == "heuristic":
             prompt_template = STEP_ITERATIVE_PROMPT_HEURISTIC
-        else:
-            self.logger.error(f"無效的策略類型: {final_strategy}")
-            return {"error": "Invalid strategy type."}
+
         # --- STEP 3: 迭代優化循環 ---
         no_improvement_count = 0
         run_start_time = time.perf_counter()
         #開始迭代處理並期待能夠優化
         for i in range(5, max_iterations + 2):
             self.iteration_count += 1
-            self.inner_iteration_count += 1
             self.logger.info(f"\n--- Iteration {i} : 開始優化 ---")
+            #如果連續N次的輸出數值結果沒有進步則停止優化
+            if no_improvement_count >= no_improvement_threshold:
+                self.logger.info(f"\n連續 {no_improvement_threshold} 次沒有進步，提前停止迭代。")
+                break
             
             last_attempt = self.history_log[-1]
-            reasoning_log = []
-            for log in self.history_log:
-                reasoning_log.append(f"Iteration {log['iteration']}: {log['reasoning'] if 'reasoning' in log else log.get('strategy', 'No reasoning provided')}")
             prompt_step3 = prompt_template.format(
                 task_description=task_description,
                 final_strategy=final_strategy,
                 final_explanation=final_explanation,
-                history_log=str(reasoning_log),
-                prev_code=last_attempt.get('code', 'this is blank right now. please give the algorithm code and implement it'),
-                prev_score=last_attempt.get('score', "this is blank right now. please try to obtain the first score"),
+                history_log=self.history_log,
+                prev_code=last_attempt.get('code', 'this is the first prompt so it is blank. please give the first algorithm code and implement it'),
+                prev_result=last_attempt.get('output', 'this is the first prompt so it is blank'),
+                prev_score=last_attempt.get('score', None)
             )
 
             # 組合完整的上下文prompt
-            
-            full_prompt_step3 = f"{prompt_step3}\n\nRemember to use the same initial data:\n{initial_data} Your goal is to generate optimal code use given information and use code interpreter to run the code"
-            self.logger.info(f"\n--- [Iteration {self.iteration_count} 的完整 Prompt] ---\n{full_prompt_step3}\n--------------------")
-            # call llm獲得解答
             thinking_start_time = time.perf_counter()
+            full_prompt_step3 = f"This is iteration {i}. Your task is to improve upon previous results.\n\n{prompt_step3}\n\nRemember to use the same initial data:\n{initial_data}"
+            self.logger.info(f"\n--- [Iteration {i} 的完整 Prompt] ---\n{full_prompt_step3}\n--------------------")
+            # call llm獲得解答
             if model_name.startswith("gemini"):
                 response_step3 = self._call_llm_api(full_prompt_step3, model_name=model_name, temp=temp, generate_code=True)
                 parsed_data3 = self._parse_gemini_response(response_step3)
             else:
                 response_step3 = self._call_llm_api(full_prompt_step3, model_name=model_name, temp=temp, generate_code=True)
                 parsed_data3 = self._parse_gpt_response(response_step3)
-            thinking_end_time = time.perf_counter()
-            r_time_i = thinking_end_time - thinking_start_time
             #將輸出的結果進行parsing
             
             # 即使模型沒給文字，reasoning 也會是空字串，而不是 None
-            reasoning_step3 = str(parsed_data3["reasoning"]) or "ERROR"
+            reasoning_step3 = parsed_data3["reasoning"] or "ERROR"
             generated_code = parsed_data3["code"] or "ERROR: No code provided."
-            generated_score = float(parsed_data3["score"]) or 0 # 可能是 None 或數值
-            is_finished = parsed_data3.get("is_finished", False)
-            
-
-            
-            
+            generated_output = parsed_data3["output"] or "ERROR: No output provided."
+            generated_score = parsed_data3["score"]  # 可能是 None 或數值
+            thinking_end_time = time.perf_counter()
+            #進行推理內容的評論
+            eval3 = self._evaluate_reasoning(reasoning_step3, model_name=model_name, history_pairs=str(self.history_log))
+            r_time_i = thinking_end_time - thinking_start_time
+            eval_step3, e_time_i = eval3.get("eval_result", {}), eval3.get("duration", 0)
+            self.reasoning_times.append(r_time_i)
+            self.evaluation_times.append(e_time_i)
+            self.reasoning_evals.append(eval_step3)
+            self.logger.info(f"--- [Iteration {i} 的推理結果] ---\n{reasoning_step3}\n--------------------")
+            self.logger.info(f"--- [Iteration {i} 的程式碼] ---\n{generated_code}\n--------------------")
+            self.logger.info(f"--- [Iteration {i} 的輸出] ---\n{generated_output}\n--------------------")
             
             # 紀錄分數，如果破紀錄則記錄此紀錄，阿連續N次都沒有進步的話也停止優化
-            if generated_score >0:
-                #進行推理內容的評論
-                self.logger.info(f"--- [Iteration {i} 的推理結果] ---\n{reasoning_step3}\n--------------------")
+            if generated_score is not None and generated_score >0:
+                self.scores.append(generated_score)
                 self.logger.info(f"Iteration {i} 完成。分數: {generated_score} (歷史最佳: {self.best_score})")
-                self.numerical_scores.append(generated_score)
                 if generated_score < self.best_score:
                     self.best_score = generated_score
-                    self.best_solution_details = f"Iteration {i}: Score={generated_score}, Code:\n{generated_code}\n"
+                    self.best_solution_details = f"Iteration {i}: Score={generated_score}, Code:\n{generated_code}\nOutput:\n{generated_output}"
                     no_improvement_count = 0
                     self.logger.info("*** 新的最佳解! ***")
                 else:
                     no_improvement_count += 1
                     self.logger.info(f"未找到更優解。連續未進步次數: {no_improvement_count}")
 
-                evaluation_result = self._evaluate_reasoning(reasoning_step3, model_name=model_name, history_pairs=str(self.history_log))
-                eval_result_dict = evaluation_result.get("eval_result", "There is no evaluation result") 
-                eval_raw_answer = evaluation_result.get("raw_answer", "")
-                eval_time = evaluation_result.get("duration", 0)
-                self.reasoning_times.append(r_time_i)
-                self.evaluation_times.append(eval_time)
-                
-                if eval_result_dict != "There is no evaluation result":
-                    self.reasoning_scores.append(int(eval_result_dict["total_score"]))
-                else:
-                    numbers = re.findall(r'\d+', str(eval_raw_answer))
-                    if numbers:
-                        # 如果找到數字，返回最後一個數字序列的整數形式
-                        self.reasoning_scores.append(int(numbers[-1]))
-                    else:
-                        # 如果沒有找到數字，返回 0
-                        self.reasoning_scores.append(0)
-                self.history_log.append({"iteration": self.inner_iteration_count+1, "type": "Optimization", "reasoning": reasoning_step3,"score": generated_score, "code":generated_code, "eval": self.reasoning_scores[-1] or 0, "r_time": r_time_i, "e_time": eval_time})
-
-
             else:
-                self.logger.warning(f"Iteration {self.inner_iteration_count} 警告：未能獲取有效分數。")
-                if len(self.numerical_scores) > 0:
-                    self.numerical_scores.append(self.numerical_scores[-1] if self.numerical_scores else self.best_score) # 重複上一個分數
-                    self.reasoning_scores.append(self.reasoning_scores[-1] if self.reasoning_scores else 0) # 重複上一個分數
-
+                self.logger.warning(f"Iteration {i} 警告：未能獲取有效分數。")
+                self.scores.append(self.scores[-1] if self.scores else self.best_score) # 重複上一個分數
                 no_improvement_count += 1
                 self.logger.info(f"計為一次未進步。連續未進步次數: {no_improvement_count}")
-                # self.history_log.append({"iteration": self.inner_iteration_count+1, "type": "Optimization", "reasoning": "FAILED","score": 0, "code":"None", "eval": 0, "r_time": 0, "e_time": 0})
 
 
-
+            self.history_log.append({"iteration": i-4, "type": "Optimization", "reasoning": reasoning_step3, "code": generated_code, "output": generated_output, "score": generated_score, "eval": eval_step3, "r_time": r_time_i, "e_time": e_time_i})
 
             if len(self.history_log) > max_history_length:
-                self.history_log.pop(0)
+                self.history_log.pop(1)
             # 如果模型自己覺得OK就OK
-            if is_finished:
+            if "FINISHED" in reasoning_step3:
                 self.logger.info("\n模型回傳 'FINISHED'，結束優化流程。")
                 break
-            if no_improvement_count >= no_improvement_threshold:
-                self.logger.info(f"\n連續 {no_improvement_count} 次未找到更優解，結束優化流程。")
-                break
-            
 
         # --- 最終結果 ---
         run_end_time = time.perf_counter()
         total_run_time = run_end_time - run_start_time
         self.logger.info("\n\n" + "="*20 + " 優化流程結束 " + "="*20)
         self.logger.info(f"總執行時間: {total_run_time:.2f} 秒")
-        self.logger.info(f"總共執行了 {len(self.numerical_scores)} 次有效的迭代。")
+        self.logger.info(f"總共執行了 {len(self.scores)} 次有效的迭代。")
         self.logger.info(f"找到的最佳分數為: {self.best_score}")
         self.logger.info("\n--- [最佳解的詳細資訊] ---\n" + self.best_solution_details)
         self.logger.info("\n---------------------\n")
-        if ":)" in task_description:
+        if task_description =="""
+            Solve the Traveling Salesman Problem (TSP) for a given set of 2D points.
+            The goal is to find the shortest possible tour that visits each point exactly once and returns to the origin point.
+            The distance between points is the Euclidean distance.
+            """:
             self.logger.info("額外加碼:與最佳解之間的距離")
             dp_start_time = time.perf_counter()
             dp_calculation = DP4TSP()
@@ -1055,7 +1098,7 @@ if __name__ == '__main__':
         TASK_DESCRIPTION = """
         Solve the Traveling Salesman Problem (TSP) for a given set of 2D points.
         The goal is to find the shortest possible tour that visits each point exactly once and returns to the origin point.
-        The distance between points is the Euclidean distance. :)
+        The distance between points is the Euclidean distance.
         """
         # 1. 建立一個預設的隨機數生成器
         rng = np.random.default_rng(42)
@@ -1065,7 +1108,7 @@ if __name__ == '__main__':
         data_points = rng.random((25, 2))
 
         # 2. 設定模型名稱
-        model_name = "gemini-2.5-pro" # 設定一個預設模型
+        model_name = "gemini-2.5-flash" # 設定一個預設模型
         
         # 3. 載入 API Keys (這部分邏輯不變)
         load_dotenv()
