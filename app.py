@@ -266,7 +266,9 @@ def long_running_task(form_data):
         log_stream.seek(0)
 
     try:
+        
         logger.info("Background task started.")
+        
         # --- 從傳入的 form_data 中獲取參數 ---
         task_description = form_data.get('task_description')
         n_points = int(form_data.get('n_points'))
@@ -281,9 +283,12 @@ def long_running_task(form_data):
         # --- 運行框架 ---
         rng = np.random.default_rng(42)
         data_points = rng.random((n_points, 2))
-
+        # --- 初始化 SelfOptimizingFramework ---
+        # 注意：這裡假設 SelfOptimizingFramework 已經正確實現
         framework = SelfOptimizingFramework()
-
+        
+        # --- 執行框架 ---
+        # 這裡的 run 方法應該是你在 main.py 中定義的
         framework.run(
             task_description=task_description,
             points=data_points,
